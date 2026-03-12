@@ -26,7 +26,13 @@
       "Bash(sleep 3 && cmd.exe /c \"netstat -ano | findstr :4173\" 2>&1; cmd.exe /c \"netstat -ano | findstr :8765\" 2>&1)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://proper-plugin-dice-leone.trycloudflare.com/)",
       "Bash(ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\public\\\\\"; ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\config\\\\\" 2>/dev/null)",
-      "Bash(ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\public\\\\\"; ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\config\\\\\")"
+      "Bash(ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\public\\\\\"; ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\config\\\\\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status 2>&1)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create nova-guardian --public --description \"Nova Guardian - Space Shooting Defense Game\" 2>&1)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" workflow run deploy.yml --repo dkqkdjaak2003-pixel/nova-guardian 2>&1\nsleep 5 && \"/c/Program Files/GitHub CLI/gh.exe\" run list --repo dkqkdjaak2003-pixel/nova-guardian --limit 3 2>&1)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run watch 22987979225 --repo dkqkdjaak2003-pixel/nova-guardian 2>&1 | tail -10)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://dkqkdjaak2003-pixel.github.io/nova-guardian/ 2>&1)",
+      "Bash(cd \"/c/Users/ILSONG/Desktop/안티그래비티\" && npx tsc --noEmit 2>&1)"
     ]
   }
 }

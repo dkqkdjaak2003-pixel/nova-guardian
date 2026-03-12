@@ -10,10 +10,19 @@ export interface ExternalInput {
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  private readonly speed: number;
-  private readonly fireRate: number;
+  private readonly baseSpeed: number;
+  private readonly baseFireRate: number;
   private readonly bulletSpeed: number;
   private readonly gravCooldown: number;
+
+  private speedMult: number     = 1;
+  private fireRateMult: number  = 1;
+
+  get speed(): number    { return this.baseSpeed    * this.speedMult; }
+  get fireRate(): number { return this.baseFireRate / this.fireRateMult; }
+
+  setSpeedMultiplier(m: number): void    { this.speedMult    = m; }
+  setFireRateMultiplier(m: number): void { this.fireRateMult = m; }
 
   private lastFire: number = 0;
   private lastGrav: number = -99999;
@@ -35,8 +44,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.bullets = bulletsGroup;
 
     const cfg = ConfigManager.getInstance().settings.player;
-    this.speed        = cfg.speed;
-    this.fireRate     = cfg.fireRate;
+    this.baseSpeed    = cfg.speed;
+    this.baseFireRate = cfg.fireRate;
     this.bulletSpeed  = cfg.bulletSpeed;
     this.gravCooldown = cfg.gravityCooldown;
 

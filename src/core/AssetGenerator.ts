@@ -28,6 +28,9 @@ export class AssetGenerator {
     this.genJoystickBase(scene);
     this.genJoystickThumb(scene);
     this.genSpecialBtn(scene);
+    this.genInterceptor(scene);
+    this.genSniper(scene);
+    this.genPowerups(scene);
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -1013,6 +1016,104 @@ export class AssetGenerator {
     gfx.strokeCircle(c, c, 18);
     gfx.generateTexture('btn-special', S, S);
     gfx.destroy();
+  }
+
+  // ── INTERCEPTOR ───────────────────────────────────────────────────────────
+  private static genInterceptor(scene: Phaser.Scene): void {
+    const gfx = this.g(scene);
+    const W = 44, H = 22, cy = H / 2;
+    // Engine glow
+    gfx.fillStyle(0xff6600, 0.2);
+    gfx.fillEllipse(W, cy, 18, 18);
+    // Sharp arrowhead body (faces left)
+    gfx.fillStyle(0x882200, 1);
+    gfx.fillPoints([{ x: W-2, y: cy-8 }, { x: 8, y: cy }, { x: W-2, y: cy+8 }], true);
+    gfx.fillStyle(0xcc3300, 1);
+    gfx.fillPoints([{ x: W-2, y: cy-5 }, { x: 12, y: cy }, { x: W-2, y: cy+5 }], true);
+    gfx.fillStyle(0xff5500, 0.9);
+    gfx.fillPoints([{ x: W-2, y: cy-2 }, { x: 16, y: cy }, { x: W-2, y: cy+2 }], true);
+    // Nose
+    gfx.fillStyle(0xff8800, 1);
+    gfx.fillPoints([{ x: 8, y: cy-2 }, { x: 8, y: cy+2 }, { x: 1, y: cy }], true);
+    // Engine ports
+    gfx.fillStyle(0xff9900, 0.9);
+    gfx.fillRect(W-4, cy-4, 4, 3);
+    gfx.fillRect(W-4, cy+1, 4, 3);
+    gfx.fillStyle(0xffcc44, 0.7);
+    gfx.fillRect(W-3, cy-3, 3, 1);
+    gfx.fillRect(W-3, cy+2, 3, 1);
+    // Speed stripe
+    gfx.fillStyle(0xffcc00, 0.5);
+    gfx.fillRect(10, cy-1, 30, 2);
+    gfx.generateTexture('enemy-interceptor', W, H);
+    gfx.destroy();
+  }
+
+  // ── SNIPER ────────────────────────────────────────────────────────────────
+  private static genSniper(scene: Phaser.Scene): void {
+    const gfx = this.g(scene);
+    const W = 76, H = 28, cy = H / 2;
+    // Scope glow
+    gfx.fillStyle(0x9900ff, 0.12);
+    gfx.fillEllipse(W, cy, 20, 20);
+    // Long thin fuselage
+    gfx.fillStyle(0x220033, 1);
+    gfx.fillRect(10, cy-5, 58, 10);
+    gfx.fillStyle(0x330055, 1);
+    gfx.fillRect(12, cy-4, 54, 8);
+    gfx.fillStyle(0x4d0088, 0.9);
+    gfx.fillRect(14, cy-2, 50, 4);
+    // Narrow prow
+    gfx.fillStyle(0x330055, 1);
+    gfx.fillPoints([{ x: 10, y: cy-5 }, { x: 10, y: cy+5 }, { x: 1, y: cy }], true);
+    gfx.fillStyle(0x6600cc, 0.9);
+    gfx.fillPoints([{ x: 10, y: cy-3 }, { x: 10, y: cy+3 }, { x: 4, y: cy }], true);
+    // Long barrel (left-protruding)
+    gfx.fillStyle(0x1a0033, 1);
+    gfx.fillRect(10, cy-1, 66, 2);
+    gfx.fillStyle(0x8800ff, 0.8);
+    gfx.fillRect(10, cy-1, 66, 1);
+    // Scope
+    gfx.fillStyle(0x110022, 1);
+    gfx.fillEllipse(52, cy, 14, 10);
+    gfx.fillStyle(0xaa00ff, 0.7);
+    gfx.fillEllipse(52, cy, 10, 7);
+    gfx.fillStyle(0xdd88ff, 0.5);
+    gfx.fillEllipse(50, cy-1, 5, 4);
+    // Engine
+    gfx.fillStyle(0x8800cc, 0.9);
+    gfx.fillRect(W-7, cy-3, 6, 6);
+    gfx.fillStyle(0xcc44ff, 0.7);
+    gfx.fillRect(W-5, cy-2, 5, 4);
+    gfx.generateTexture('enemy-sniper', W, H);
+    gfx.destroy();
+  }
+
+  // ── POWERUPS ──────────────────────────────────────────────────────────────
+  private static genPowerups(scene: Phaser.Scene): void {
+    const defs: Array<{ key: string; color: number; sym: number }> = [
+      { key: 'powerup-rapid',  color: 0xff8800, sym: 0xffaa44 },
+      { key: 'powerup-shield', color: 0x00ccff, sym: 0x88eeff },
+      { key: 'powerup-nuke',   color: 0xff2244, sym: 0xff8888 },
+      { key: 'powerup-speed',  color: 0x00ff88, sym: 0x88ffcc },
+      { key: 'powerup-multi',  color: 0xffdd00, sym: 0xffee88 },
+    ];
+    const S = 28, c = 14;
+    defs.forEach(({ key, color, sym }) => {
+      const g = this.g(scene);
+      // Outer glow
+      g.fillStyle(color, 0.2); g.fillCircle(c, c, 14);
+      g.fillStyle(color, 0.35); g.fillCircle(c, c, 11);
+      // Body
+      g.fillStyle(color, 0.9); g.fillCircle(c, c, 8);
+      // Inner highlight
+      g.fillStyle(sym, 0.8); g.fillCircle(c-2, c-2, 4);
+      g.fillStyle(0xffffff, 0.4); g.fillCircle(c-3, c-3, 2);
+      // Border ring
+      g.lineStyle(1, color, 1); g.strokeCircle(c, c, 10);
+      g.generateTexture(key, S, S);
+      g.destroy();
+    });
   }
 
   // ── SEEDED PRNG (so stars look the same each run) ─────────────────────────

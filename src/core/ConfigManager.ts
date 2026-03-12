@@ -21,12 +21,18 @@ export interface GameConfig {
     gravityCooldown: number;
   };
   enemies: {
-    scout: EnemyConfig;
-    fighter: EnemyConfig;
-    bomber: EnemyConfig;
-    boss: EnemyConfig;
+    scout:       EnemyConfig;
+    fighter:     EnemyConfig;
+    bomber:      EnemyConfig;
+    boss:        EnemyConfig;
+    interceptor: EnemyConfig;
+    sniper:      EnemyConfig;
   };
   waves: { betweenWaveDelay: number };
+  powerups: {
+    dropChance: number;
+    duration: { rapid: number; shield: number; speed: number; multi: number };
+  };
 }
 
 const DEFAULT_CONFIG: GameConfig = {
@@ -38,12 +44,18 @@ const DEFAULT_CONFIG: GameConfig = {
     lives: 3, invincibilityTime: 2000, gravityCooldown: 5000,
   },
   enemies: {
-    scout:   { speed: 260, hp: 1,  score: 100,  fireRate: 2200, size: { width: 50,  height: 36  } },
-    fighter: { speed: 190, hp: 3,  score: 300,  fireRate: 1600, size: { width: 70,  height: 52  } },
-    bomber:  { speed: 110, hp: 8,  score: 600,  fireRate: 1100, size: { width: 100, height: 80  } },
-    boss:    { speed: 70,  hp: 60, score: 5000, fireRate: 700,  size: { width: 160, height: 120 } },
+    scout:       { speed: 260, hp: 1,  score: 100,  fireRate: 2200, size: { width: 50,  height: 36  } },
+    fighter:     { speed: 190, hp: 3,  score: 300,  fireRate: 1600, size: { width: 70,  height: 52  } },
+    bomber:      { speed: 110, hp: 8,  score: 600,  fireRate: 1100, size: { width: 100, height: 80  } },
+    boss:        { speed: 70,  hp: 60, score: 5000, fireRate: 700,  size: { width: 160, height: 120 } },
+    interceptor: { speed: 480, hp: 1,  score: 150,  fireRate: 2200, size: { width: 44,  height: 22  } },
+    sniper:      { speed: 95,  hp: 4,  score: 400,  fireRate: 3200, size: { width: 76,  height: 28  } },
   },
-  waves: { betweenWaveDelay: 3500 },
+  waves: { betweenWaveDelay: 3000 },
+  powerups: {
+    dropChance: 0.06,
+    duration: { rapid: 8000, shield: 5000, speed: 10000, multi: 15000 },
+  },
 };
 
 export class ConfigManager {
@@ -61,7 +73,6 @@ export class ConfigManager {
     try {
       const loaded = yaml.load(text) as Partial<GameConfig>;
       const base = { ...DEFAULT_CONFIG, ...loaded } as GameConfig;
-      // Admin panel overrides stored in localStorage take priority
       const override = localStorage.getItem('nova_config_override');
       if (override) {
         const overrideData = yaml.load(override) as Partial<GameConfig>;

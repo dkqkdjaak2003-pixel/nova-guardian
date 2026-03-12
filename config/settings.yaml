@@ -40,6 +40,26 @@ enemies:
     score: 5000
     fireRate: 700
     size: { width: 160, height: 120 }
+  interceptor:
+    speed: 480
+    hp: 1
+    score: 150
+    fireRate: 2200
+    size: { width: 44, height: 22 }
+  sniper:
+    speed: 95
+    hp: 4
+    score: 400
+    fireRate: 3200
+    size: { width: 76, height: 28 }
 
 waves:
-  betweenWaveDelay: 3500
+  betweenWaveDelay: 3000
+
+powerups:
+  dropChance: 0.06
+  duration:
+    rapid: 8000
+    shield: 5000
+    speed: 10000
+    multi: 15000

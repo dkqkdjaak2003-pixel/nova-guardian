@@ -2,12 +2,14 @@ import Phaser from 'phaser';
 import { Bullet } from './Bullet';
 import { ConfigManager } from '../core/ConfigManager';
 
-export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss';
+export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss' | 'interceptor' | 'sniper';
 export const EnemyType = {
-  SCOUT:   'scout'   as const,
-  FIGHTER: 'fighter' as const,
-  BOMBER:  'bomber'  as const,
-  BOSS:    'boss'    as const,
+  SCOUT:       'scout'       as const,
+  FIGHTER:     'fighter'     as const,
+  BOMBER:      'bomber'      as const,
+  BOSS:        'boss'        as const,
+  INTERCEPTOR: 'interceptor' as const,
+  SNIPER:      'sniper'      as const,
 };
 
 export type SpawnEdge = 'right' | 'left' | 'top' | 'bottom' | 'random';
@@ -67,12 +69,27 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private static getDef(type: EnemyType): EnemyDef {
     const cfg = ConfigManager.getInstance().settings.enemies;
     const map: Record<EnemyType, EnemyDef> = {
-      scout:   { texture: 'enemy-scout',   ...cfg.scout,   w: cfg.scout.size.width,   h: cfg.scout.size.height   },
-      fighter: { texture: 'enemy-fighter', ...cfg.fighter, w: cfg.fighter.size.width, h: cfg.fighter.size.height },
-      bomber:  { texture: 'enemy-bomber',  ...cfg.bomber,  w: cfg.bomber.size.width,  h: cfg.bomber.size.height  },
-      boss:    { texture: 'enemy-boss',    ...cfg.boss,    w: cfg.boss.size.width,    h: cfg.boss.size.height    },
+      scout:       { texture: 'enemy-scout',       ...cfg.scout,       w: cfg.scout.size.width,       h: cfg.scout.size.height       },
+      fighter:     { texture: 'enemy-fighter',     ...cfg.fighter,     w: cfg.fighter.size.width,     h: cfg.fighter.size.height     },
+      bomber:      { texture: 'enemy-bomber',      ...cfg.bomber,      w: cfg.bomber.size.width,      h: cfg.bomber.size.height      },
+      boss:        { texture: 'enemy-boss',        ...cfg.boss,        w: cfg.boss.size.width,        h: cfg.boss.size.height        },
+      interceptor: { texture: 'enemy-interceptor', ...cfg.interceptor, w: cfg.interceptor.size.width, h: cfg.interceptor.size.height },
+      sniper:      { texture: 'enemy-sniper',      ...cfg.sniper,      w: cfg.sniper.size.width,      h: cfg.sniper.size.height      },
     };
     return map[type];
+  }
+
+  /** Scale HP, speed, fireRate based on wave number for infinite difficulty curve. */
+  applyDifficulty(wave: number): void {
+    if (wave <= 1) return;
+    const w = wave - 1;
+    const hpMult   = Math.min(1 + w * 0.040, 20);
+    const spdMult  = Math.min(1 + w * 0.012, 4.5);
+    const fireMult = Math.max(1 - w * 0.008, 0.22);
+    this.hp       = Math.max(1, Math.round(this.hp       * hpMult));
+    this.maxHp    = this.hp;
+    this.speed    = Math.round(this.speed    * spdMult);
+    this.fireRate = Math.round(this.fireRate * fireMult);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -90,13 +107,26 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.type === EnemyType.BOSS) {
       this.updateBoss(body, nx, ny, playerY);
     } else if (this.type === EnemyType.BOMBER) {
-      // Slow direct homing
       body.setVelocity(nx * this.speed, ny * this.speed);
+    } else if (this.type === EnemyType.INTERCEPTOR) {
+      // Lightning-fast straight-line dash
+      body.setVelocity(nx * this.speed, ny * this.speed);
+    } else if (this.type === EnemyType.SNIPER) {
+      // Maintain ideal distance and strafe
+      const IDEAL = 320;
+      const dist = Math.hypot(dx, dy);
+      const strafeDir = Math.sin(time * 0.0009 + this.sinOffset) > 0 ? 1 : -1;
+      if (dist > IDEAL + 90) {
+        body.setVelocity(nx * this.speed, ny * this.speed);
+      } else if (dist < IDEAL - 90) {
+        body.setVelocity(-nx * this.speed * 0.8, -ny * this.speed * 0.8);
+      } else {
+        body.setVelocity(-ny * this.speed * strafeDir * 0.7, nx * this.speed * strafeDir * 0.7);
+      }
     } else {
       // Scout / Fighter: homing + perpendicular sine wobble
       const elapsed = (time - this.sinOffset) / 1000;
       const wobble = Math.sin(elapsed * this.sinFreq * Math.PI * 2) * this.sinAmp;
-      // Perpendicular to homing direction
       const px = -ny * wobble;
       const py =  nx * wobble;
       body.setVelocity(nx * this.speed + px, ny * this.speed + py);
@@ -148,7 +178,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     const spd = 380;
 
-    if (this.type === EnemyType.SCOUT) {
+    if (this.type === EnemyType.INTERCEPTOR) {
+      // Fast burst shot
+      shoot(nx * spd * 0.9, ny * spd * 0.9);
+
+    } else if (this.type === EnemyType.SNIPER) {
+      // Single precise high-velocity shot
+      shoot(nx * 680, ny * 680);
+
+    } else if (this.type === EnemyType.SCOUT) {
       shoot(nx * spd, ny * spd);
 
     } else if (this.type === EnemyType.FIGHTER) {
