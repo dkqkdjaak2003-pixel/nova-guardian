@@ -4,6 +4,7 @@ import { Enemy, EnemyType, type SpawnEdge } from '../entities/Enemy';
 import { Bullet } from '../entities/Bullet';
 import { Powerup, type PowerupType, POWERUP_LABELS } from '../entities/Powerup';
 import { ConfigManager } from '../core/ConfigManager';
+import { SoundManager } from '../core/SoundManager';
 
 // ── Wave entry ────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,9 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(500, 0, 0, 8);
     this.time.delayedCall(1000, () => this.launchWave(0));
+
+    SoundManager.resume();
+    SoundManager.startBGM('game');
   }
 
   // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -349,6 +353,7 @@ export class GameScene extends Phaser.Scene {
     const cfg = ConfigManager.getInstance().settings.waves;
     this.waveText.setText(`WAVE ${this.waveIndex + 1}  CLEAR`).setColor('#00ff88').setAlpha(1);
     this.tweens.add({ targets: this.waveText, alpha: 0, duration: 700, delay: 1800 });
+    SoundManager.playWaveClear();
     this.time.delayedCall(cfg.betweenWaveDelay, () => this.launchWave(this.waveIndex + 1));
   }
 
@@ -409,6 +414,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnHitSpark(this.player.x, this.player.y, 0xff4444);
       this.cameras.main.shake(180, 0.011);
       this.cameras.main.flash(120, 255, 40, 40, false);
+      SoundManager.playHit();
       this.loseLife();
     }
   }
@@ -423,6 +429,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.player.hit(this.time.now)) return;
     this.cameras.main.shake(240, 0.016);
     this.cameras.main.flash(180, 255, 60, 0, false);
+    SoundManager.playHit();
     this.explodeEnemy(enemy);
     enemy.kill();
     this.waveEnemyKilled++;
@@ -436,6 +443,7 @@ export class GameScene extends Phaser.Scene {
     const pu = powerupObj as Powerup;
     if (!pu.active) return;
     pu.disableBody(true, true);
+    SoundManager.playPowerup();
     this.applyPowerup(pu.pType);
   }
 
@@ -479,6 +487,7 @@ export class GameScene extends Phaser.Scene {
   private nukeAllEnemies(): void {
     this.cameras.main.flash(350, 255, 255, 0, false);
     this.cameras.main.shake(400, 0.018);
+    SoundManager.playNuke();
     this.enemies.getChildren().forEach(obj => {
       const en = obj as Enemy;
       if (!en.active) return;
@@ -517,6 +526,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.cameras.main.flash(180, 0, 160, 255, false);
     this.cameras.main.shake(100, 0.005);
+    SoundManager.playGravFlip();
     const RADIUS = 340;
     this.enemyBullets.getChildren().forEach(obj => {
       const b = obj as Bullet;
@@ -541,6 +551,8 @@ export class GameScene extends Phaser.Scene {
     this.player.setActive(false).setVisible(false);
     this.cameras.main.shake(550, 0.022);
     this.cameras.main.flash(350, 255, 50, 50, false);
+    SoundManager.stopBGM();
+    SoundManager.playGameOver();
     this.time.delayedCall(1100, () => {
       this.cameras.main.fadeOut(650, 0, 0, 8);
       this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -553,6 +565,9 @@ export class GameScene extends Phaser.Scene {
 
   private explodeEnemy(e: Enemy | Phaser.Physics.Arcade.Sprite): void {
     const x = e.x, y = e.y;
+    const type = (e as Enemy).type;
+    const big = type === EnemyType.BOSS || type === EnemyType.BOMBER;
+    SoundManager.playExplosion(big);
     const em = this.add.particles(x, y, 'particle-explode', {
       speed: { min: 80, max: 300 }, angle: { min: 0, max: 360 },
       scale: { start: 1.3, end: 0 }, alpha: { start: 1, end: 0 },
@@ -562,8 +577,7 @@ export class GameScene extends Phaser.Scene {
     em.explode(22, x, y);
     this.time.delayedCall(650, () => em.destroy());
 
-    const type = (e as Enemy).type;
-    if (type === EnemyType.BOSS || type === EnemyType.BOMBER) {
+    if (big) {
       this.cameras.main.shake(300, 0.016);
       this.cameras.main.flash(180, 255, 100, 0, false);
       for (let i = 0; i < 4; i++) {
@@ -654,6 +668,14 @@ export class GameScene extends Phaser.Scene {
       fontSize: '18px', color: '#224466', fontFamily: 'monospace',
     }).setOrigin(1, 0).setDepth(100).setInteractive();
     pauseBtn.on('pointerdown', () => this.togglePause());
+
+    const muteBtn = this.add.text(W - 54, 14, '♪', {
+      fontSize: '18px', color: '#224466', fontFamily: 'monospace',
+    }).setOrigin(1, 0).setDepth(100).setInteractive();
+    muteBtn.on('pointerdown', () => {
+      const muted = SoundManager.toggleMute();
+      muteBtn.setColor(muted ? '#553333' : '#224466');
+    });
   }
 
   // ── UI BUILD ──────────────────────────────────────────────────────────────

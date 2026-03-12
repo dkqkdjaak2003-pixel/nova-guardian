@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../core/ScoreManager';
+import { SoundManager } from '../core/SoundManager';
 
 interface GOData { score: number; wave: number }
 
@@ -26,6 +27,9 @@ export class GameOverScene extends Phaser.Scene {
       tint: [0xff4400, 0xff8800, 0xffcc00, 0x882200],
       lifespan: { min: 2000, max: 4000 }, frequency: 120, quantity: 2,
     });
+
+    // ── BGM → menu after game over ──
+    SoundManager.startBGM('menu');
 
     // ── Register score → get rank ──
     const rank = ScoreManager.add(score, wave);

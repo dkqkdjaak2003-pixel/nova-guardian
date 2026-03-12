@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { Bullet } from './Bullet';
 import { ConfigManager } from '../core/ConfigManager';
+import { SoundManager } from '../core/SoundManager';
+
+let _lastEnemyShootSnd = 0; // global cooldown to prevent audio spam
 
 export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss' | 'interceptor' | 'sniper';
 export const EnemyType = {
@@ -170,6 +173,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   ): void {
     if (time - this.lastFire < this.fireRate) return;
     this.lastFire = time + Phaser.Math.Between(-150, 200);
+    if (time - _lastEnemyShootSnd > 110) { SoundManager.playShoot(false); _lastEnemyShootSnd = time; }
 
     const shoot = (vx: number, vy: number) => {
       const b = bullets.get(this.x, this.y) as Bullet | null;

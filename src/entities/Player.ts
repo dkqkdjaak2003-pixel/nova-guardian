@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ConfigManager } from '../core/ConfigManager';
 import { Bullet } from './Bullet';
+import { SoundManager } from '../core/SoundManager';
 
 /** External normalized movement input from virtual joystick (−1…1 per axis). */
 export interface ExternalInput {
@@ -187,12 +188,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const perpY =  cosA * 9;
     const spawnDist = this.displayWidth * 0.5;
 
+    let fired = false;
     [-1, 1].forEach(side => {
       const sx = this.x + cosA * spawnDist + perpX * side;
       const sy = this.y + sinA * spawnDist + perpY * side;
       const b = this.bullets.get(sx, sy) as Bullet | null;
-      if (b) b.fire(sx, sy, cosA * this.bulletSpeed, sinA * this.bulletSpeed, 1, true);
+      if (b) { b.fire(sx, sy, cosA * this.bulletSpeed, sinA * this.bulletSpeed, 1, true); fired = true; }
     });
+    if (fired) SoundManager.playShoot(true);
   }
 
   // ── GRAVITY FLIP ──────────────────────────────────────────────────────────
@@ -218,6 +221,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
     burst.explode(32, this.x, this.y);
     this.scene.time.delayedCall(550, () => burst.destroy());
+    SoundManager.playGravFlip();
     return true;
   }
 

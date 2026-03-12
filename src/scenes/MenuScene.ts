@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../core/ScoreManager';
+import { SoundManager } from '../core/SoundManager';
 
 export class MenuScene extends Phaser.Scene {
   private stars1!: Phaser.GameObjects.TileSprite;
@@ -97,6 +98,16 @@ export class MenuScene extends Phaser.Scene {
 
     // Fade in
     this.cameras.main.fadeIn(600, 0, 0, 8);
+
+    // BGM — resume AudioContext on first pointer/key, then start menu BGM
+    const startBGM = () => {
+      SoundManager.resume();
+      SoundManager.startBGM('menu');
+      this.input.off('pointerdown', startBGM);
+      this.input.keyboard?.off('keydown', startBGM);
+    };
+    this.input.once('pointerdown', startBGM);
+    this.input.keyboard?.once('keydown', startBGM);
   }
 
   private buildButton(x: number, y: number, label: string, color: number, cb: () => void): Phaser.GameObjects.Container {
@@ -122,7 +133,7 @@ export class MenuScene extends Phaser.Scene {
       text.setColor(colorHex);
       this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 80 });
     });
-    btn.on('pointerdown', cb);
+    btn.on('pointerdown', () => { SoundManager.playButtonClick(); cb(); });
     return btn;
   }
 

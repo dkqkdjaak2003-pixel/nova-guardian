@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { AssetGenerator } from '../core/AssetGenerator';
 import { ConfigManager } from '../core/ConfigManager';
+import { SoundManager } from '../core/SoundManager';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
@@ -38,6 +39,7 @@ export class BootScene extends Phaser.Scene {
     // Parse config
     const text = this.cache.text.get('gameConfig');
     ConfigManager.getInstance().loadFromText(text);
+    SoundManager.init();
 
     // Generate all procedural textures
     AssetGenerator.generateAll(this);
