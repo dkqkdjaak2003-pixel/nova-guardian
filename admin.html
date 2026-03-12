@@ -186,6 +186,13 @@
         <div class="info-row"><span>AUTO DEPLOY</span><span style="color:var(--accent2)">ON PUSH → main</span></div>
       </div>
 
+      <!-- Ranking -->
+      <div class="sidebar-section">
+        <h3>RANKING DATA</h3>
+        <div id="ranking-list" style="font-size:11px;color:var(--muted);line-height:1.9"></div>
+        <button class="btn danger" style="width:100%;margin-top:8px" onclick="clearRanking()">CLEAR ALL SCORES</button>
+      </div>
+
       <!-- Changelog -->
       <div class="sidebar-section">
         <h3>HOW TO DEVELOP</h3>
@@ -378,6 +385,28 @@ function applyQuickTune() {
     alert('Parse error: ' + e.message);
   }
 }
+
+// ── RANKING ───────────────────────────────────────────────────────────────
+function loadRanking() {
+  try {
+    const scores = JSON.parse(localStorage.getItem('nova_scores_v1') || '[]');
+    const el = document.getElementById('ranking-list');
+    if (!el) return;
+    if (!scores.length) { el.textContent = 'No records yet.'; return; }
+    el.innerHTML = scores.slice(0, 10).map((e, i) =>
+      `<span style="color:var(--accent)">${i+1}.</span> ${String(e.score).padStart(6,'0')}  W${e.wave}  ${e.date}`
+    ).join('<br>');
+  } catch {}
+}
+
+function clearRanking() {
+  if (!confirm('All scores will be deleted. Continue?')) return;
+  localStorage.removeItem('nova_scores_v1');
+  loadRanking();
+}
+
+const _origInit = init;
+function init() { _origInit(); loadRanking(); }
 
 checkLogin();
 </script>

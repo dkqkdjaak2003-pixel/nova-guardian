@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ScoreManager } from '../core/ScoreManager';
 
 export class MenuScene extends Phaser.Scene {
   private stars1!: Phaser.GameObjects.TileSprite;
@@ -51,9 +52,18 @@ export class MenuScene extends Phaser.Scene {
     sepGfx.lineStyle(1, 0x00aacc, 0.3);
     sepGfx.lineBetween(W / 2 - 100, 220, W / 2 + 100, 220);
 
+    // Best score display
+    const best = ScoreManager.best();
+    if (best > 0) {
+      this.add.text(W / 2, H / 2 + 44, `BEST  ${best.toString().padStart(6, '0')}`, {
+        fontSize: '13px', color: '#335566', fontFamily: 'monospace', letterSpacing: 2,
+      }).setOrigin(0.5);
+    }
+
     // --- Play button ---
-    this.buildButton(W / 2, H / 2 + 80, 'PLAY', 0x00ccff, () => this.startGame());
-    this.buildButton(W / 2, H / 2 + 150, 'HOW TO PLAY', 0x0088aa, () => this.showHelp());
+    this.buildButton(W / 2, H / 2 + 80,  'PLAY',        0x00ccff, () => this.startGame());
+    this.buildButton(W / 2, H / 2 + 150, 'RANKING',     0xffdd00, () => this.showRanking());
+    this.buildButton(W / 2, H / 2 + 210, 'HOW TO PLAY', 0x0088aa, () => this.showHelp());
 
     // --- Controls hint ---
     const hints = [
@@ -149,6 +159,60 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('GameScene');
     });
+  }
+
+  private showRanking(): void {
+    const { width: W, height: H } = this.scale;
+    const scores = ScoreManager.getAll();
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88).setInteractive();
+    const objs: Phaser.GameObjects.GameObject[] = [overlay];
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x00000e, 0.95);
+    panel.fillRect(W / 2 - 220, H / 2 - 200, 440, 400);
+    panel.lineStyle(1, 0x003366, 0.9);
+    panel.strokeRect(W / 2 - 220, H / 2 - 200, 440, 400);
+    objs.push(panel);
+
+    const ttl = this.add.text(W / 2, H / 2 - 180, 'TOP  10  PILOTS', {
+      fontSize: '16px', color: '#00ccff', fontFamily: 'monospace',
+      fontStyle: 'bold', letterSpacing: 4,
+    }).setOrigin(0.5);
+    objs.push(ttl);
+
+    const hdrStyle = { fontSize: '10px', color: '#335566', fontFamily: 'monospace' };
+    objs.push(this.add.text(W / 2 - 190, H / 2 - 158, '#   SCORE    WAVE   DATE', hdrStyle));
+
+    if (scores.length === 0) {
+      objs.push(this.add.text(W / 2, H / 2, 'NO RECORDS YET', {
+        fontSize: '14px', color: '#334455', fontFamily: 'monospace',
+      }).setOrigin(0.5));
+    } else {
+      scores.slice(0, 10).forEach((e, i) => {
+        const rowY = H / 2 - 138 + i * 30;
+        const isTop3 = i < 3;
+        const numCol  = ['#ffdd00', '#cccccc', '#cc8844', '#4488aa'][Math.min(i, 3)];
+        const rowGfx = this.add.graphics();
+        if (isTop3) {
+          rowGfx.fillStyle(0x001133, 0.5);
+          rowGfx.fillRect(W / 2 - 212, rowY - 4, 424, 22);
+        }
+        objs.push(rowGfx);
+        objs.push(this.add.text(W / 2 - 198, rowY, `${i + 1}.`, { fontSize: '13px', color: numCol, fontFamily: 'monospace', fontStyle: 'bold' }));
+        objs.push(this.add.text(W / 2 - 174, rowY, e.score.toString().padStart(6, '0'), { fontSize: '13px', color: '#00eeff', fontFamily: 'monospace' }));
+        objs.push(this.add.text(W / 2 - 60,  rowY, `W${e.wave}`, { fontSize: '13px', color: '#4488aa', fontFamily: 'monospace' }));
+        objs.push(this.add.text(W / 2 + 30,  rowY, e.date,       { fontSize: '12px', color: '#223344', fontFamily: 'monospace' }));
+      });
+    }
+
+    const closeHint = this.add.text(W / 2, H / 2 + 185, 'TAP TO CLOSE', {
+      fontSize: '11px', color: '#223344', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+    objs.push(closeHint);
+
+    const close = () => objs.forEach(o => o.destroy());
+    overlay.on('pointerdown', close);
+    this.input.keyboard?.once('keydown-ESC', close);
   }
 
   private showHelp(): void {
