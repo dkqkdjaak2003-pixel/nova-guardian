@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npx tsc --noEmit 2>&1 | head -502)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && netlify status 2>&1)",
+      "Bash(npx netlify-cli:*)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npx vite build 2>&1 | head -50)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && find src -name \"*.ts\" | xargs grep -n \"Expected\\\\|arguments\" 2>/dev/null; echo \"---\"; ls src/)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npx tsc --noEmit 2>&1; find src -name \"*.ts\" -o -name \"*.tsx\" | head -30)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npx tsc --noEmit --diagnostics 2>&1)",
+      "Bash(netlify --version 2>&1; surge --version 2>&1; npx netlify --version 2>&1)",
+      "Read(//c/Users/ILSONG/.netlify/**)",
+      "Read(//c/Users/ILSONG/**)",
+      "Bash(cloudflared --version 2>&1; npx cloudflared --version 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npm run build 2>&1 | tail -5)",
+      "Read(//tmp/**)",
+      "Bash(gh --version 2>&1; git --version 2>&1)",
+      "Bash(npm install:*)",
+      "Bash(sleep 3 && gh --version 2>&1)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version 2>&1)",
+      "Bash(pkill -f \"vite preview\" 2>/dev/null; pkill -f \"cloudflared\" 2>/dev/null; sleep 1; echo \"done\")",
+      "Bash(taskkill /F /IM node.exe 2>&1; taskkill /F /IM cloudflared.exe 2>&1; sleep 2; echo \"done\")",
+      "Bash(pkill -9 -f \"vite\" 2>/dev/null; pkill -9 -f \"cloudflared\" 2>/dev/null; pkill -9 -f \"node\" 2>/dev/null; sleep 1; echo \"killed\")",
+      "Bash(cmd.exe /c \"taskkill /F /IM node.exe\" 2>&1; cmd.exe /c \"taskkill /F /IM cloudflared.exe\" 2>&1)",
+      "Bash(sleep 3 && cmd.exe /c \"netstat -ano | findstr :4173\" 2>&1; cmd.exe /c \"netstat -ano | findstr :8765\" 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://proper-plugin-dice-leone.trycloudflare.com/)",
+      "Bash(ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\public\\\\\"; ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\config\\\\\" 2>/dev/null)",
+      "Bash(ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\public\\\\\"; ls \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\\\\config\\\\\")"
+    ]
+  }
+}

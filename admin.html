@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NOVA GUARDIAN — Admin</title>
+  <script src="https://unpkg.com/js-yaml@4/dist/js-yaml.min.js"></script>
+  <style>
+    :root {
+      --bg: #00000e; --panel: #080820; --border: #003366;
+      --accent: #00ccff; --accent2: #00ff88; --danger: #ff3344;
+      --text: #aaddff; --muted: #335566; --font: 'Courier New', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+    /* ── Login ── */
+    #login-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100vh; gap: 16px;
+    }
+    #login-screen h1 { color: var(--accent); font-size: 22px; letter-spacing: 6px; }
+    #login-screen p  { color: var(--muted); font-size: 12px; }
+    #pw-input {
+      background: var(--panel); border: 1px solid var(--border);
+      color: var(--accent); font-family: var(--font); font-size: 16px;
+      padding: 10px 18px; width: 260px; text-align: center;
+      outline: none; letter-spacing: 4px;
+    }
+    #pw-input:focus { border-color: var(--accent); }
+    #login-err { color: var(--danger); font-size: 12px; height: 14px; }
+
+    /* ── Main ── */
+    #admin-main { display: none; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { color: var(--accent); font-size: 15px; letter-spacing: 4px; }
+    .header-btns { display: flex; gap: 10px; }
+
+    .btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text); font-family: var(--font); font-size: 12px;
+      padding: 7px 16px; cursor: pointer; letter-spacing: 2px;
+      transition: border-color .15s, color .15s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { border-color: var(--accent2); color: var(--accent2); }
+    .btn.primary:hover { background: var(--accent2); color: #000; }
+    .btn.danger  { border-color: var(--danger);  color: var(--danger);  }
+    .btn.danger:hover  { background: var(--danger);  color: #fff; }
+
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 0; height: calc(100vh - 53px); }
+
+    /* Editor */
+    .editor-panel { padding: 20px; overflow-y: auto; border-right: 1px solid var(--border); }
+    .editor-panel h2 { font-size: 11px; color: var(--muted); letter-spacing: 3px; margin-bottom: 12px; }
+    #yaml-editor {
+      width: 100%; height: calc(100vh - 180px);
+      background: #020212; border: 1px solid var(--border);
+      color: #88ffcc; font-family: var(--font); font-size: 13px;
+      padding: 14px; resize: none; outline: none; line-height: 1.6;
+    }
+    #yaml-editor:focus { border-color: var(--accent); }
+    .editor-actions { display: flex; gap: 10px; margin-top: 12px; }
+    #parse-status { font-size: 11px; margin-top: 8px; height: 14px; }
+    .ok  { color: var(--accent2); }
+    .err { color: var(--danger); }
+
+    /* Sidebar */
+    .sidebar { overflow-y: auto; }
+    .sidebar-section { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .sidebar-section h3 { font-size: 11px; color: var(--muted); letter-spacing: 3px; margin-bottom: 12px; }
+
+    .info-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
+    .info-row span:first-child { color: var(--muted); }
+    .info-row span:last-child  { color: var(--accent); }
+
+    .field-group { margin-bottom: 12px; }
+    .field-group label { display: block; font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 4px; }
+    .field-group input {
+      width: 100%; background: var(--panel); border: 1px solid var(--border);
+      color: var(--accent); font-family: var(--font); font-size: 13px;
+      padding: 6px 10px; outline: none;
+    }
+    .field-group input:focus { border-color: var(--accent); }
+
+    .changelog { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .changelog .tag { color: var(--accent2); }
+
+    .active-badge {
+      display: inline-block; padding: 2px 8px; font-size: 10px;
+      border: 1px solid var(--accent2); color: var(--accent2); letter-spacing: 2px;
+    }
+    .default-badge {
+      display: inline-block; padding: 2px 8px; font-size: 10px;
+      border: 1px solid var(--muted); color: var(--muted); letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <h1>NOVA GUARDIAN</h1>
+  <p>ADMIN ACCESS REQUIRED</p>
+  <input id="pw-input" type="password" placeholder="PASSWORD" autocomplete="off"/>
+  <div id="login-err"></div>
+  <p style="font-size:11px;color:var(--muted)">Press Enter to authenticate</p>
+</div>
+
+<!-- ── ADMIN MAIN ── -->
+<div id="admin-main">
+  <header>
+    <h1>⬡ NOVA GUARDIAN — ADMIN CONSOLE</h1>
+    <div class="header-btns">
+      <button class="btn" onclick="window.open('./index.html','_blank')">▶ PLAY GAME</button>
+      <button class="btn danger" onclick="logout()">LOGOUT</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- YAML Editor -->
+    <div class="editor-panel">
+      <h2>GAME CONFIG EDITOR (YAML)</h2>
+      <textarea id="yaml-editor" spellcheck="false"></textarea>
+      <div id="parse-status"></div>
+      <div class="editor-actions">
+        <button class="btn primary" onclick="saveConfig()">SAVE &amp; APPLY</button>
+        <button class="btn" onclick="resetConfig()">RESET TO DEFAULT</button>
+        <button class="btn" onclick="loadFromFile()">RELOAD FROM FILE</button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+      <!-- Status -->
+      <div class="sidebar-section">
+        <h3>CONFIG STATUS</h3>
+        <div class="info-row">
+          <span>MODE</span>
+          <span id="config-mode-badge"></span>
+        </div>
+        <div class="info-row">
+          <span>LAST SAVED</span>
+          <span id="last-saved">—</span>
+        </div>
+        <div class="info-row">
+          <span>SIZE</span>
+          <span id="config-size">—</span>
+        </div>
+      </div>
+
+      <!-- Quick tune -->
+      <div class="sidebar-section">
+        <h3>QUICK TUNE</h3>
+        <div class="field-group">
+          <label>PLAYER SPEED</label>
+          <input type="number" id="qt-speed" min="50" max="800"/>
+        </div>
+        <div class="field-group">
+          <label>FIRE RATE (ms, lower = faster)</label>
+          <input type="number" id="qt-firerate" min="50" max="2000"/>
+        </div>
+        <div class="field-group">
+          <label>PLAYER LIVES</label>
+          <input type="number" id="qt-lives" min="1" max="10"/>
+        </div>
+        <div class="field-group">
+          <label>GRAVITY COOLDOWN (ms)</label>
+          <input type="number" id="qt-gravcooldown" min="500" max="20000"/>
+        </div>
+        <button class="btn primary" style="width:100%;margin-top:4px" onclick="applyQuickTune()">APPLY QUICK TUNE</button>
+      </div>
+
+      <!-- Deploy info -->
+      <div class="sidebar-section">
+        <h3>DEPLOY INFO</h3>
+        <div class="info-row"><span>BUILD CMD</span><span style="color:#88ffcc">npm run build</span></div>
+        <div class="info-row"><span>OUTPUT DIR</span><span>dist/</span></div>
+        <div class="info-row"><span>HOST</span><span>GitHub Pages</span></div>
+        <div class="info-row"><span>AUTO DEPLOY</span><span style="color:var(--accent2)">ON PUSH → main</span></div>
+      </div>
+
+      <!-- Changelog -->
+      <div class="sidebar-section">
+        <h3>HOW TO DEVELOP</h3>
+        <div class="changelog">
+          <p><span class="tag">1.</span> Edit source in <code>src/</code></p>
+          <p><span class="tag">2.</span> <code>npm run dev</code> for live preview</p>
+          <p><span class="tag">3.</span> <code>git add . &amp;&amp; git commit -m "..."</code></p>
+          <p><span class="tag">4.</span> <code>git push</code> → auto-deploy to GitHub Pages</p>
+          <p style="margin-top:8px"><span class="tag">Config only?</span> Edit above &amp; SAVE — no build needed.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AUTH ──────────────────────────────────────────────────────────────────
+const ADMIN_PW = 'nova2026';
+const SESSION_KEY = 'nova_admin_session';
+
+function checkLogin() {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') showAdmin();
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value;
+  if (val === ADMIN_PW) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    showAdmin();
+  } else {
+    document.getElementById('login-err').textContent = 'ACCESS DENIED';
+    e.target.value = '';
+    setTimeout(() => document.getElementById('login-err').textContent = '', 1500);
+  }
+});
+
+function showAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-main').style.display = 'block';
+  init();
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+// ── DEFAULT CONFIG (mirrors settings.yaml) ───────────────────────────────
+const DEFAULT_YAML = `game:
+  width: 800
+  height: 600
+  title: "NOVA GUARDIAN"
+
+player:
+  speed: 280
+  gravity: 1400
+  size:
+    width: 80
+    height: 48
+  fireRate: 180
+  bulletSpeed: 620
+  lives: 3
+  invincibilityTime: 2000
+  gravityCooldown: 5000
+
+enemies:
+  scout:
+    speed: 260
+    hp: 1
+    score: 100
+    fireRate: 2200
+    size: { width: 50, height: 36 }
+  fighter:
+    speed: 190
+    hp: 3
+    score: 300
+    fireRate: 1600
+    size: { width: 70, height: 52 }
+  bomber:
+    speed: 110
+    hp: 8
+    score: 600
+    fireRate: 1100
+    size: { width: 100, height: 80 }
+  boss:
+    speed: 70
+    hp: 60
+    score: 5000
+    fireRate: 700
+    size: { width: 160, height: 120 }
+
+waves:
+  betweenWaveDelay: 3500`;
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+function init() {
+  const saved = localStorage.getItem('nova_config_override');
+  const editor = document.getElementById('yaml-editor');
+  if (saved) {
+    editor.value = saved;
+    setMode(true);
+  } else {
+    editor.value = DEFAULT_YAML;
+    setMode(false);
+  }
+  updateStatus();
+  loadQuickTune();
+  editor.addEventListener('input', () => validateYaml());
+}
+
+function setMode(isOverride) {
+  const badge = document.getElementById('config-mode-badge');
+  badge.innerHTML = isOverride
+    ? '<span class="active-badge">OVERRIDE ACTIVE</span>'
+    : '<span class="default-badge">DEFAULT</span>';
+}
+
+function updateStatus() {
+  const val = document.getElementById('yaml-editor').value;
+  document.getElementById('config-size').textContent = val.length + ' chars';
+  const ts = localStorage.getItem('nova_config_saved_at');
+  document.getElementById('last-saved').textContent = ts ? new Date(+ts).toLocaleString('ko-KR') : '—';
+}
+
+function validateYaml() {
+  const status = document.getElementById('parse-status');
+  try {
+    jsyaml.load(document.getElementById('yaml-editor').value);
+    status.textContent = '✓ Valid YAML';
+    status.className = 'ok';
+    return true;
+  } catch(e) {
+    status.textContent = '✗ ' + e.message.split('\n')[0];
+    status.className = 'err';
+    return false;
+  }
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+function saveConfig() {
+  if (!validateYaml()) return;
+  const val = document.getElementById('yaml-editor').value;
+  localStorage.setItem('nova_config_override', val);
+  localStorage.setItem('nova_config_saved_at', Date.now().toString());
+  setMode(true);
+  updateStatus();
+  alert('Config saved. Reload the game to apply.');
+}
+
+function resetConfig() {
+  if (!confirm('Reset to default config? This clears your override.')) return;
+  localStorage.removeItem('nova_config_override');
+  localStorage.removeItem('nova_config_saved_at');
+  document.getElementById('yaml-editor').value = DEFAULT_YAML;
+  setMode(false);
+  updateStatus();
+  document.getElementById('parse-status').textContent = '';
+}
+
+function loadFromFile() {
+  document.getElementById('yaml-editor').value = DEFAULT_YAML;
+  validateYaml();
+}
+
+// ── QUICK TUNE ────────────────────────────────────────────────────────────
+function loadQuickTune() {
+  try {
+    const cfg = jsyaml.load(document.getElementById('yaml-editor').value);
+    if (!cfg) return;
+    document.getElementById('qt-speed').value       = cfg.player?.speed ?? 280;
+    document.getElementById('qt-firerate').value    = cfg.player?.fireRate ?? 180;
+    document.getElementById('qt-lives').value       = cfg.player?.lives ?? 3;
+    document.getElementById('qt-gravcooldown').value = cfg.player?.gravityCooldown ?? 5000;
+  } catch {}
+}
+
+function applyQuickTune() {
+  try {
+    const cfg = jsyaml.load(document.getElementById('yaml-editor').value) || {};
+    cfg.player = cfg.player || {};
+    cfg.player.speed            = +document.getElementById('qt-speed').value;
+    cfg.player.fireRate         = +document.getElementById('qt-firerate').value;
+    cfg.player.lives            = +document.getElementById('qt-lives').value;
+    cfg.player.gravityCooldown  = +document.getElementById('qt-gravcooldown').value;
+    document.getElementById('yaml-editor').value = jsyaml.dump(cfg, { indent: 2 });
+    validateYaml();
+  } catch(e) {
+    alert('Parse error: ' + e.message);
+  }
+}
+
+checkLogin();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "NOVA GUARDIAN",
+  "short_name": "NOVA",
+  "description": "Omnidirectional Shooting Defense Game",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#000008",
+  "theme_color": "#00ccff",
+  "categories": ["games"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

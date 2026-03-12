@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#000210"/>
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#00ccff" stroke-width="4" opacity="0.4"/>
+  <circle cx="256" cy="256" r="185" fill="none" stroke="#0088aa" stroke-width="2" opacity="0.3"/>
+  <!-- Player ship facing right -->
+  <!-- Upper wing -->
+  <polygon points="140,230 300,230 240,150 120,150" fill="#1a3a8a"/>
+  <polygon points="145,230 290,230 235,158 125,158" fill="#2255cc" opacity="0.7"/>
+  <!-- Lower wing -->
+  <polygon points="140,282 300,282 240,362 120,362" fill="#1a3a8a"/>
+  <polygon points="145,282 290,282 235,354 125,354" fill="#2255cc" opacity="0.7"/>
+  <!-- Body -->
+  <rect x="130" y="228" width="220" height="56" rx="4" fill="#0a1a44"/>
+  <rect x="134" y="232" width="212" height="48" rx="3" fill="#142255"/>
+  <rect x="138" y="236" width="204" height="40" rx="2" fill="#1a2e6a"/>
+  <!-- Nose -->
+  <polygon points="350,228 350,284 415,256" fill="#1a3a8a"/>
+  <polygon points="350,234 350,278 408,256" fill="#2a54cc" opacity="0.9"/>
+  <!-- Cockpit -->
+  <ellipse cx="316" cy="256" rx="40" ry="26" fill="#003355"/>
+  <ellipse cx="316" cy="256" rx="34" ry="20" fill="#00aaff" opacity="0.85"/>
+  <ellipse cx="308" cy="250" rx="14" ry="8" fill="white" opacity="0.4"/>
+  <!-- Engines -->
+  <rect x="100" y="232" width="36" height="22" rx="3" fill="#0c1840"/>
+  <rect x="100" y="258" width="36" height="22" rx="3" fill="#0c1840"/>
+  <rect x="100" y="235" width="14" height="16" rx="2" fill="#0066ff"/>
+  <rect x="100" y="261" width="14" height="16" rx="2" fill="#0066ff"/>
+  <!-- Cannons -->
+  <rect x="328" y="204" width="76" height="16" rx="3" fill="#1a3366"/>
+  <rect x="328" y="292" width="76" height="16" rx="3" fill="#1a3366"/>
+  <rect x="396" y="204" width="12" height="16" rx="2" fill="#00ffcc"/>
+  <rect x="396" y="292" width="12" height="16" rx="2" fill="#00ffcc"/>
+  <!-- Energy stripe -->
+  <rect x="145" y="250" width="160" height="12" rx="2" fill="#00ccff" opacity="0.35"/>
+  <!-- Star decoration -->
+  <circle cx="256" cy="256" r="6" fill="#00eeff"/>
+  <text x="256" y="460" text-anchor="middle" font-family="monospace" font-size="48" font-weight="bold" fill="#00ccff" opacity="0.9">NOVA</text>
+</svg>
