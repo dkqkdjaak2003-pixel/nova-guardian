@@ -10,20 +10,64 @@ export interface ExternalInput {
   special: boolean; // gravity-flip requested
 }
 
+export type UpgradeId =
+  | 'speed'
+  | 'fireRate'
+  | 'tripleShot'
+  | 'damage'
+  | 'invincibility'
+  | 'cooldown'
+  | 'wideSpread';
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly baseSpeed: number;
   private readonly baseFireRate: number;
   private readonly bulletSpeed: number;
   private readonly gravCooldown: number;
 
-  private speedMult: number     = 1;
-  private fireRateMult: number  = 1;
+  private speedMult: number    = 1;
+  private fireRateMult: number = 1;
+
+  // ── Permanent upgrades ─────────────────────────────────────────────────────
+  private tripleShot: boolean        = false;
+  private damageMult: number         = 1;
+  private gravCooldownMult: number   = 1;
+  private invincibilityBonus: number = 0;
+  private spreadOffset: number       = 9; // pixel perpendicular offset for dual cannon
 
   get speed(): number    { return this.baseSpeed    * this.speedMult; }
   get fireRate(): number { return this.baseFireRate / this.fireRateMult; }
+  get effectiveGravCooldown(): number { return this.gravCooldown * this.gravCooldownMult; }
 
   setSpeedMultiplier(m: number): void    { this.speedMult    = m; }
   setFireRateMultiplier(m: number): void { this.fireRateMult = m; }
+
+  /** Apply a permanent upgrade to the player. */
+  applyUpgrade(id: UpgradeId): void {
+    switch (id) {
+      case 'speed':
+        this.speedMult = Math.min(this.speedMult + 0.2, 2.4);
+        break;
+      case 'fireRate':
+        this.fireRateMult = Math.min(this.fireRateMult + 0.3, 4.5);
+        break;
+      case 'tripleShot':
+        this.tripleShot = true;
+        break;
+      case 'damage':
+        this.damageMult = Math.min(this.damageMult * 1.5, 6);
+        break;
+      case 'invincibility':
+        this.invincibilityBonus += 600;
+        break;
+      case 'cooldown':
+        this.gravCooldownMult = Math.max(this.gravCooldownMult * 0.7, 0.2);
+        break;
+      case 'wideSpread':
+        this.spreadOffset = Math.min(this.spreadOffset + 8, 32);
+        break;
+    }
+  }
 
   private lastFire: number = 0;
   private lastGrav: number = -99999;
@@ -103,7 +147,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // ── Virtual joystick input ──
     if (ext) {
-      const DEAD = 0.15;
+      const DEAD = 0.12;
       if (Math.abs(ext.jx) > DEAD) vx = ext.jx * this.speed;
       if (Math.abs(ext.jy) > DEAD) vy = ext.jy * this.speed;
     }
@@ -120,7 +164,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // ── Update facing angle ──
     if (vx !== 0 || vy !== 0) {
       this.faceAngle = Math.atan2(vy, vx);
-      // Sprite faces right by default; setRotation(atan2) is correct in Phaser (Y-down)
       this.setRotation(this.faceAngle);
     }
 
@@ -128,8 +171,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const backX = this.x - Math.cos(this.faceAngle) * this.displayWidth * 0.44;
     const backY = this.y - Math.sin(this.faceAngle) * this.displayWidth * 0.44;
     this.thrustEmitter.setPosition(backX, backY);
-    // Aim trail opposite to facing direction (in degrees)
-    // Dynamically aim thrust trail in opposite-to-facing direction
     const trailAngleDeg = Phaser.Math.RadToDeg(this.faceAngle) + 180;
     this.thrustEmitter.particleAngle = trailAngleDeg;
 
@@ -183,25 +224,39 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const cosA = Math.cos(fireAngle);
     const sinA = Math.sin(fireAngle);
-    // Perpendicular offset for dual cannons
-    const perpX = -sinA * 9;
-    const perpY =  cosA * 9;
     const spawnDist = this.displayWidth * 0.5;
-
+    const dmg = this.damageMult;
     let fired = false;
-    [-1, 1].forEach(side => {
-      const sx = this.x + cosA * spawnDist + perpX * side;
-      const sy = this.y + sinA * spawnDist + perpY * side;
-      const b = this.bullets.get(sx, sy) as Bullet | null;
-      if (b) { b.fire(sx, sy, cosA * this.bulletSpeed, sinA * this.bulletSpeed, 1, true); fired = true; }
-    });
+
+    if (this.tripleShot) {
+      // 3발 부채꼴 발사
+      const spreadRad = 0.18;
+      [fireAngle - spreadRad, fireAngle, fireAngle + spreadRad].forEach(a => {
+        const ca = Math.cos(a), sa = Math.sin(a);
+        const sx = this.x + ca * spawnDist;
+        const sy = this.y + sa * spawnDist;
+        const b = this.bullets.get(sx, sy) as Bullet | null;
+        if (b) { b.fire(sx, sy, ca * this.bulletSpeed, sa * this.bulletSpeed, dmg, true); fired = true; }
+      });
+    } else {
+      // 듀얼 캐논 (기본)
+      const perpX = -sinA * this.spreadOffset;
+      const perpY =  cosA * this.spreadOffset;
+      [-1, 1].forEach(side => {
+        const sx = this.x + cosA * spawnDist + perpX * side;
+        const sy = this.y + sinA * spawnDist + perpY * side;
+        const b = this.bullets.get(sx, sy) as Bullet | null;
+        if (b) { b.fire(sx, sy, cosA * this.bulletSpeed, sinA * this.bulletSpeed, dmg, true); fired = true; }
+      });
+    }
+
     if (fired) SoundManager.playShoot(true);
   }
 
   // ── GRAVITY FLIP ──────────────────────────────────────────────────────────
 
   gravityFlip(time: number): boolean {
-    if (time - this.lastGrav < this.gravCooldown) return false;
+    if (time - this.lastGrav < this.effectiveGravCooldown) return false;
     this.lastGrav = time;
 
     this.scene.tweens.add({
@@ -229,7 +284,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   hit(time: number): boolean {
     if (time < this.invincibleUntil) return false;
-    const invTime = ConfigManager.getInstance().settings.player.invincibilityTime;
+    const invTime = ConfigManager.getInstance().settings.player.invincibilityTime + this.invincibilityBonus;
     this.invincibleUntil = time + invTime;
     this.shieldSprite.setAlpha(0.75);
     this.scene.tweens.add({
@@ -242,7 +297,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   isInvincible(time: number): boolean { return time < this.invincibleUntil; }
 
   getGravCooldownPct(time: number): number {
-    return Math.min(1, (time - this.lastGrav) / this.gravCooldown);
+    return Math.min(1, (time - this.lastGrav) / this.effectiveGravCooldown);
   }
 
   destroy(fromScene?: boolean): void {

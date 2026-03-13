@@ -11,9 +11,33 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NOVA GUARDIAN" />
     <link rel="apple-touch-icon" href="/icon.svg" />
+    <!-- SEO: Basic -->
+    <meta name="description" content="Nova Guardian — 전방위 슈팅 디펜스 게임. 무한 웨이브를 막아내고 최고 점수에 도전하세요. PC·모바일 모두 지원." />
+    <meta name="keywords" content="nova guardian, 슈팅게임, 디펜스게임, 브라우저게임, 모바일게임, phaser game, space shooter" />
+    <meta name="author" content="Nova Guardian" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://dkqkdjaak2003-pixel.github.io/nova-guardian/" />
+
+    <!-- SEO: Open Graph (카카오·Facebook·Discord 공유 미리보기) -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://dkqkdjaak2003-pixel.github.io/nova-guardian/" />
+    <meta property="og:title"       content="NOVA GUARDIAN — 전방위 슈팅 디펜스" />
+    <meta property="og:description" content="무한 웨이브를 막아내고 TOP 10 랭킹에 도전하세요. 브라우저에서 바로 플레이!" />
+    <meta property="og:image"       content="https://dkqkdjaak2003-pixel.github.io/nova-guardian/og-image.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale"      content="ko_KR" />
+    <meta property="og:site_name"   content="NOVA GUARDIAN" />
+
+    <!-- SEO: Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="NOVA GUARDIAN — 전방위 슈팅 디펜스" />
+    <meta name="twitter:description" content="무한 웨이브를 막아내고 TOP 10 랭킹에 도전하세요. 브라우저에서 바로 플레이!" />
+    <meta name="twitter:image"       content="https://dkqkdjaak2003-pixel.github.io/nova-guardian/og-image.png" />
+
     <!-- Title / Icon -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <title>NOVA GUARDIAN</title>
+    <title>NOVA GUARDIAN — 전방위 슈팅 디펜스 게임</title>
     <style>
       *, *::before, *::after { box-sizing: border-box; }
       html, body {
@@ -32,10 +56,70 @@
         justify-content: center;
         align-items: center;
       }
-      canvas { display: block; touch-action: none; }
+      canvas {
+        display: block;
+        touch-action: none;
+        image-rendering: pixelated;        /* Chrome / Edge / Opera */
+        image-rendering: crisp-edges;      /* Firefox */
+        image-rendering: -moz-crisp-edges; /* Firefox legacy */
+      }
+
+      /* Portrait mode overlay */
+      #rotate-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #000008;
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #00eeff;
+        font-family: monospace;
+        text-align: center;
+        padding: 20px;
+      }
+      #rotate-overlay .rotate-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        animation: rotateAnim 1.8s ease-in-out infinite;
+      }
+      #rotate-overlay .rotate-title {
+        font-size: 18px;
+        font-weight: bold;
+        letter-spacing: 4px;
+        margin-bottom: 10px;
+        color: #00eeff;
+      }
+      #rotate-overlay .rotate-sub {
+        font-size: 12px;
+        color: #336677;
+        letter-spacing: 2px;
+      }
+      @keyframes rotateAnim {
+        0%   { transform: rotate(0deg); }
+        40%  { transform: rotate(-90deg); }
+        60%  { transform: rotate(-90deg); }
+        100% { transform: rotate(0deg); }
+      }
+      @media (orientation: portrait) and (max-width: 900px) {
+        #rotate-overlay { display: flex; }
+        #game-container { display: none; }
+      }
+      @media (orientation: landscape) {
+        #rotate-overlay { display: none; }
+        #game-container { display: flex; }
+      }
     </style>
   </head>
   <body>
+    <!-- Portrait mode warning -->
+    <div id="rotate-overlay">
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-title">ROTATE  DEVICE</div>
+      <div class="rotate-sub">가로 모드로 회전해주세요</div>
+    </div>
+
     <div id="game-container"></div>
     <script type="module" src="/src/main.ts"></script>
     <script>
@@ -45,8 +129,47 @@
           navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
       }
+      
+      // Attempt to lock orientation to landscape
+      const lockOrientation = async () => {
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } catch (e) {
+          console.warn('Orientation lock failed:', e);
+        }
+      };
+
+      // Try locking on first touch/click
+      document.addEventListener('touchstart', lockOrientation, { once: true });
+      document.addEventListener('click', lockOrientation, { once: true });
+
       // Prevent context menu on long-press (mobile)
       document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+    <!-- SEO: JSON-LD 구조화 데이터 (Google 검색 결과 강화) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "NOVA GUARDIAN",
+      "description": "전방위 슈팅 디펜스 게임. 무한 웨이브를 막아내고 TOP 10 랭킹에 도전하세요.",
+      "url": "https://dkqkdjaak2003-pixel.github.io/nova-guardian/",
+      "image": "https://dkqkdjaak2003-pixel.github.io/nova-guardian/og-image.png",
+      "genre": ["Shooter", "Defense", "Arcade"],
+      "gamePlatform": ["Web Browser", "Mobile"],
+      "applicationCategory": "Game",
+      "operatingSystem": "Any",
+      "playMode": "SinglePlayer",
+      "inLanguage": "ko",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW"
+      }
+    }
     </script>
   </body>
 </html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dkqkdjaak2003-pixel.github.io/nova-guardian/sitemap.xml

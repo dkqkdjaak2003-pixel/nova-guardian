@@ -27,11 +27,13 @@ export interface GameConfig {
     boss:        EnemyConfig;
     interceptor: EnemyConfig;
     sniper:      EnemyConfig;
+    carrier:     EnemyConfig;
+    turret:      EnemyConfig;
   };
   waves: { betweenWaveDelay: number };
   powerups: {
     dropChance: number;
-    duration: { rapid: number; shield: number; speed: number; multi: number };
+    duration: { rapid: number; shield: number; speed: number; multi: number; life: number };
   };
 }
 
@@ -50,11 +52,13 @@ const DEFAULT_CONFIG: GameConfig = {
     boss:        { speed: 70,  hp: 60, score: 5000, fireRate: 700,  size: { width: 160, height: 120 } },
     interceptor: { speed: 480, hp: 1,  score: 150,  fireRate: 2200, size: { width: 44,  height: 22  } },
     sniper:      { speed: 95,  hp: 4,  score: 400,  fireRate: 3200, size: { width: 76,  height: 28  } },
+    carrier:     { speed: 55,  hp: 28, score: 1200, fireRate: 2400, size: { width: 130, height: 90  } },
+    turret:      { speed: 32,  hp: 18, score: 750,  fireRate: 1600, size: { width: 72,  height: 72  } },
   },
   waves: { betweenWaveDelay: 3000 },
   powerups: {
     dropChance: 0.06,
-    duration: { rapid: 8000, shield: 5000, speed: 10000, multi: 15000 },
+    duration: { rapid: 8000, shield: 5000, speed: 10000, multi: 15000, life: 0 },
   },
 };
 

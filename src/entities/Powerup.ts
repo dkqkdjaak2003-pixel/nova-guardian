@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-export type PowerupType = 'rapid' | 'shield' | 'nuke' | 'speed' | 'multi';
+export type PowerupType = 'rapid' | 'shield' | 'nuke' | 'speed' | 'multi' | 'life';
 
 export const POWERUP_LABELS: Record<PowerupType, string> = {
   rapid:  'RAPID FIRE',
@@ -8,6 +8,7 @@ export const POWERUP_LABELS: Record<PowerupType, string> = {
   nuke:   'NUKE',
   speed:  'SPEED UP',
   multi:  '2× SCORE',
+  life:   '1-UP',
 };
 
 export class Powerup extends Phaser.Physics.Arcade.Sprite {

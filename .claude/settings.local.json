@@ -34,7 +34,12 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://dkqkdjaak2003-pixel.github.io/nova-guardian/ 2>&1)",
       "Bash(cd \"/c/Users/ILSONG/Desktop/안티그래비티\" && npx tsc --noEmit 2>&1)",
       "Bash(sleep 60 && \"/c/Program Files/GitHub CLI/gh.exe\" run list --repo dkqkdjaak2003-pixel/nova-guardian --limit 1 2>&1)",
-      "Bash(cd \"/c/Users/ILSONG/Desktop/안티그래비티\" && npx tsc --noEmit 2>&1 && npm run build 2>&1 | tail -4)"
+      "Bash(cd \"/c/Users/ILSONG/Desktop/안티그래비티\" && npx tsc --noEmit 2>&1 && npm run build 2>&1 | tail -4)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npm run build 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npm run build 2>&1 | tail -20)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npm run build 2>&1 | tail -30)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && npm run build 2>&1 | tail -15)",
+      "Bash(cd \"C:\\\\Users\\\\ILSONG\\\\Desktop\\\\안티그래비티\" && node scripts/gen-og-image.mjs22)"
     ]
   }
 }

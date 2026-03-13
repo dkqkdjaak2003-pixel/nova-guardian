@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { ScoreManager } from '../core/ScoreManager';
 import { SoundManager } from '../core/SoundManager';
+import { DifficultyManager, type Difficulty } from '../core/DifficultyManager';
+import { GameModeManager, type GameMode } from '../core/GameModeManager';
 
 export class MenuScene extends Phaser.Scene {
   private stars1!: Phaser.GameObjects.TileSprite;
@@ -62,9 +64,10 @@ export class MenuScene extends Phaser.Scene {
     }
 
     // --- Play button ---
-    this.buildButton(W / 2, H / 2 + 80,  'PLAY',        0x00ccff, () => this.startGame());
-    this.buildButton(W / 2, H / 2 + 150, 'RANKING',     0xffdd00, () => this.showRanking());
-    this.buildButton(W / 2, H / 2 + 210, 'HOW TO PLAY', 0x0088aa, () => this.showHelp());
+    this.buildButton(W / 2, H / 2 + 80,  'PLAY',        0x00ccff, () => this.showDifficultySelect());
+    this.buildButton(W / 2, H / 2 + 140, 'RANKING',     0xffdd00, () => this.showRanking());
+    this.buildButton(W / 2, H / 2 + 200, 'HOW TO PLAY', 0x0088aa, () => this.showHelp());
+    this.buildButton(W / 2, H / 2 + 260, 'SETTINGS',    0x8844ff, () => this.showSettings());
 
     // --- Controls hint ---
     const hints = [
@@ -165,6 +168,204 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
+  private showDifficultySelect(): void {
+    const { width: W, height: H } = this.scale;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000011, 0.9).setInteractive();
+    objs.push(overlay);
+
+    const panelW = Math.min(W - 40, 560);
+    const panelGfx = this.add.graphics();
+    panelGfx.fillStyle(0x00000e, 0.95);
+    panelGfx.fillRect(W / 2 - panelW / 2, H / 2 - 155, panelW, 310);
+    panelGfx.lineStyle(1, 0x003366, 0.9);
+    panelGfx.strokeRect(W / 2 - panelW / 2, H / 2 - 155, panelW, 310);
+    objs.push(panelGfx);
+
+    const ttl = this.add.text(W / 2, H / 2 - 136, 'SELECT  DIFFICULTY', {
+      fontSize: '18px', color: '#00eeff', fontFamily: 'monospace',
+      fontStyle: 'bold', letterSpacing: 4, stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5);
+    objs.push(ttl);
+
+    const options = DifficultyManager.allOptions();
+    const btnW = Math.floor((panelW - 60) / 3);
+    const btnH = 180;
+    const startX = W / 2 - btnW - btnW / 2 - 10;
+
+    options.forEach((opt, i) => {
+      const bx = startX + i * (btnW + 10);
+      const by = H / 2 + 20;
+      const colorHex = '#' + opt.color.toString(16).padStart(6, '0');
+
+      const btnGfx = this.add.graphics();
+      btnGfx.fillStyle(opt.color, 0.12);
+      btnGfx.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+      btnGfx.lineStyle(opt.id === 'normal' ? 2 : 1, opt.color, 0.75);
+      btnGfx.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+      objs.push(btnGfx);
+
+      const lbl = this.add.text(bx, by - 55, opt.label, {
+        fontSize: '16px', color: colorHex, fontFamily: 'monospace',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5);
+      objs.push(lbl);
+
+      const livesStr = '♥'.repeat(opt.startLives);
+      const livesT = this.add.text(bx, by - 20, livesStr, {
+        fontSize: '13px', color: '#ff2244', fontFamily: 'monospace',
+      }).setOrigin(0.5);
+      objs.push(livesT);
+
+      const descT = this.add.text(bx, by + 20, opt.desc, {
+        fontSize: '11px', color: '#888888', fontFamily: 'monospace',
+        wordWrap: { width: btnW - 12 }, align: 'center',
+      }).setOrigin(0.5);
+      objs.push(descT);
+
+      const hitZone = this.add.rectangle(bx, by, btnW, btnH, 0xffffff, 0).setInteractive();
+      objs.push(hitZone);
+
+      hitZone.on('pointerover', () => {
+        btnGfx.clear();
+        btnGfx.fillStyle(opt.color, 0.28);
+        btnGfx.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        btnGfx.lineStyle(2, opt.color, 1);
+        btnGfx.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        lbl.setColor('#ffffff');
+      });
+      hitZone.on('pointerout', () => {
+        btnGfx.clear();
+        btnGfx.fillStyle(opt.color, 0.12);
+        btnGfx.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        btnGfx.lineStyle(opt.id === 'normal' ? 2 : 1, opt.color, 0.75);
+        btnGfx.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        lbl.setColor(colorHex);
+      });
+      hitZone.on('pointerdown', () => {
+        SoundManager.playButtonClick();
+        DifficultyManager.set(opt.id as Difficulty);
+        objs.forEach(o => o.destroy());
+        this.showModeSelect();
+      });
+    });
+
+    const closeHint = this.add.text(W / 2, H / 2 + 130, 'TAP  TO  SELECT  ·  ESC  TO  CANCEL', {
+      fontSize: '9px', color: '#224466', fontFamily: 'monospace', letterSpacing: 2,
+    }).setOrigin(0.5);
+    objs.push(closeHint);
+
+    const close = () => objs.forEach(o => o.destroy());
+    overlay.on('pointerdown', close);
+    this.input.keyboard?.once('keydown-ESC', close);
+  }
+
+  private showModeSelect(): void {
+    const { width: W, height: H } = this.scale;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000011, 0.92).setInteractive();
+    objs.push(overlay);
+
+    const panelW = Math.min(W - 40, 500);
+    const panelH = 240;
+    const panelGfx = this.add.graphics();
+    panelGfx.fillStyle(0x00000e, 0.96);
+    panelGfx.fillRect(W / 2 - panelW / 2, H / 2 - panelH / 2 - 20, panelW, panelH + 40);
+    panelGfx.lineStyle(1, 0x003366, 0.9);
+    panelGfx.strokeRect(W / 2 - panelW / 2, H / 2 - panelH / 2 - 20, panelW, panelH + 40);
+    objs.push(panelGfx);
+
+    const ttl = this.add.text(W / 2, H / 2 - panelH / 2 - 2, 'SELECT  MODE', {
+      fontSize: '18px', color: '#00eeff', fontFamily: 'monospace',
+      fontStyle: 'bold', letterSpacing: 6, stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5);
+    objs.push(ttl);
+
+    interface ModeOpt { id: GameMode; label: string; sub: string; color: number; desc: string[] }
+    const modes: ModeOpt[] = [
+      {
+        id: 'campaign', label: 'CAMPAIGN', sub: 'NORMAL', color: 0x00ccff,
+        desc: ['Wave-based battles', 'Upgrade & shop', 'between waves'],
+      },
+      {
+        id: 'survival', label: 'SURVIVAL', sub: 'ENDLESS', color: 0xff8800,
+        desc: ['Survive as long', 'as possible', 'Escalating threat'],
+      },
+    ];
+
+    const btnW = Math.floor((panelW - 60) / 2);
+    const btnH = 170;
+    const startX = W / 2 - btnW / 2 - btnW / 2 - 10;
+
+    modes.forEach((m, i) => {
+      const bx = startX + i * (btnW + 20);
+      const by = H / 2 + 16;
+      const hex = '#' + m.color.toString(16).padStart(6, '0');
+
+      const bg = this.add.graphics();
+      bg.fillStyle(m.color, 0.12);
+      bg.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+      bg.lineStyle(2, m.color, 0.8);
+      bg.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+      objs.push(bg);
+
+      const lbl = this.add.text(bx, by - 50, m.label, {
+        fontSize: '18px', color: hex, fontFamily: 'monospace',
+        fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5);
+      objs.push(lbl);
+
+      const sub = this.add.text(bx, by - 20, m.sub, {
+        fontSize: '10px', color: hex, fontFamily: 'monospace', letterSpacing: 3,
+      }).setOrigin(0.5);
+      objs.push(sub);
+
+      m.desc.forEach((line, li) => {
+        const dt = this.add.text(bx, by + 14 + li * 16, line, {
+          fontSize: '11px', color: '#778899', fontFamily: 'monospace', align: 'center',
+        }).setOrigin(0.5);
+        objs.push(dt);
+      });
+
+      const hitZone = this.add.rectangle(bx, by, btnW, btnH, 0xffffff, 0).setInteractive();
+      objs.push(hitZone);
+
+      hitZone.on('pointerover', () => {
+        bg.clear();
+        bg.fillStyle(m.color, 0.28);
+        bg.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        bg.lineStyle(2, m.color, 1);
+        bg.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        lbl.setColor('#ffffff');
+      });
+      hitZone.on('pointerout', () => {
+        bg.clear();
+        bg.fillStyle(m.color, 0.12);
+        bg.fillRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        bg.lineStyle(2, m.color, 0.8);
+        bg.strokeRect(bx - btnW / 2, by - btnH / 2, btnW, btnH);
+        lbl.setColor(hex);
+      });
+      hitZone.on('pointerdown', () => {
+        SoundManager.playButtonClick();
+        GameModeManager.set(m.id);
+        objs.forEach(o => o.destroy());
+        this.startGame();
+      });
+    });
+
+    const hint = this.add.text(W / 2, H / 2 + panelH / 2 + 18, 'TAP TO SELECT  ·  ESC BACK', {
+      fontSize: '9px', color: '#224466', fontFamily: 'monospace', letterSpacing: 2,
+    }).setOrigin(0.5);
+    objs.push(hint);
+
+    const close = () => objs.forEach(o => o.destroy());
+    overlay.on('pointerdown', close);
+    this.input.keyboard?.once('keydown-ESC', close);
+  }
+
   private startGame(): void {
     this.cameras.main.fadeOut(500, 0, 0, 8);
     this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -226,39 +427,161 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-ESC', close);
   }
 
+  private showSettings(): void {
+    const { width: W, height: H } = this.scale;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000011, 0.92).setInteractive();
+    objs.push(overlay);
+
+    const panelW = Math.min(W - 60, 440);
+    const panelH = 260;
+    const panelGfx = this.add.graphics();
+    panelGfx.fillStyle(0x00000e, 0.96);
+    panelGfx.fillRect(W / 2 - panelW / 2, H / 2 - panelH / 2 - 20, panelW, panelH + 40);
+    panelGfx.lineStyle(1, 0x4422aa, 0.9);
+    panelGfx.strokeRect(W / 2 - panelW / 2, H / 2 - panelH / 2 - 20, panelW, panelH + 40);
+    objs.push(panelGfx);
+
+    const ttl = this.add.text(W / 2, H / 2 - panelH / 2 - 2, 'SETTINGS', {
+      fontSize: '20px', color: '#aa88ff', fontFamily: 'monospace',
+      fontStyle: 'bold', letterSpacing: 6,
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5);
+    objs.push(ttl);
+
+    // Slider builder
+    const trackW = panelW - 80;
+    const trackX = W / 2 - trackW / 2;
+    const trackH  = 8;
+
+    const addSlider = (
+      label: string,
+      y: number,
+      initVal: number,
+      onChange: (v: number) => void,
+    ): void => {
+      const lbl = this.add.text(trackX, y - 22, label, {
+        fontSize: '11px', color: '#6644cc', fontFamily: 'monospace', letterSpacing: 2,
+      });
+      objs.push(lbl);
+
+      const trackBg = this.add.graphics();
+      trackBg.fillStyle(0x110022, 0.9);
+      trackBg.fillRect(trackX, y, trackW, trackH);
+      trackBg.lineStyle(1, 0x330066, 0.9);
+      trackBg.strokeRect(trackX, y, trackW, trackH);
+      objs.push(trackBg);
+
+      const fillGfx  = this.add.graphics();
+      const thumbGfx = this.add.graphics();
+      objs.push(fillGfx, thumbGfx);
+
+      const valText = this.add.text(trackX + trackW + 14, y - 1, '', {
+        fontSize: '12px', color: '#aa88ff', fontFamily: 'monospace', fontStyle: 'bold',
+      });
+      objs.push(valText);
+
+      const draw = (v: number) => {
+        fillGfx.clear();
+        thumbGfx.clear();
+        fillGfx.fillStyle(0x6633cc, 1);
+        fillGfx.fillRect(trackX, y, trackW * v, trackH);
+        const tx = trackX + trackW * v;
+        thumbGfx.fillStyle(0xaa88ff, 1);
+        thumbGfx.fillCircle(tx, y + trackH / 2, 9);
+        thumbGfx.lineStyle(2, 0x000011, 0.7);
+        thumbGfx.strokeCircle(tx, y + trackH / 2, 9);
+        valText.setText(Math.round(v * 100) + '%');
+      };
+      draw(initVal);
+
+      const hitZone = this.add.rectangle(W / 2, y + trackH / 2, trackW + 24, 32, 0xffffff, 0).setInteractive();
+      objs.push(hitZone);
+
+      const handlePtr = (ptr: Phaser.Input.Pointer) => {
+        const v = Phaser.Math.Clamp((ptr.x - trackX) / trackW, 0, 1);
+        draw(v);
+        onChange(v);
+      };
+      hitZone.on('pointerdown', handlePtr);
+      hitZone.on('pointermove', (ptr: Phaser.Input.Pointer) => { if (ptr.isDown) handlePtr(ptr); });
+    };
+
+    addSlider('BGM VOLUME', H / 2 - 50, SoundManager.getBgmVolume(), v => SoundManager.setBgmVolume(v));
+    addSlider('SFX VOLUME', H / 2 + 50, SoundManager.getSfxVolume(), v => SoundManager.setSfxVolume(v));
+
+    const hint = this.add.text(W / 2, H / 2 + panelH / 2 + 14, 'TAP OUTSIDE  ·  ESC  TO  CLOSE', {
+      fontSize: '9px', color: '#332255', fontFamily: 'monospace', letterSpacing: 2,
+    }).setOrigin(0.5);
+    objs.push(hint);
+
+    const close = () => objs.forEach(o => o.destroy());
+    overlay.on('pointerdown', close);
+    this.input.keyboard?.once('keydown-ESC', close);
+  }
+
   private showHelp(): void {
     const { width: W, height: H } = this.scale;
-    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85)
-      .setInteractive();
+    const isMobile = this.sys.game.device.os.android || this.sys.game.device.os.iOS || this.sys.game.device.input.touch;
 
-    const lines = [
-      ['CONTROLS', '#00eeff', '22px'],
-      ['', '#ffffff', '1px'],
-      ['W / ↑    Move Up',       '#aaccee', '14px'],
-      ['S / ↓    Move Down',     '#aaccee', '14px'],
-      ['SPACE    Gravity Flip',  '#00ffcc', '14px'],
-      ['(cooldown: 5s)',          '#4499bb', '12px'],
-      ['', '#ffffff', '1px'],
-      ['OBJECTIVE', '#00eeff', '18px'],
-      ['Destroy enemy waves before', '#aaccee', '14px'],
-      ['they breach your defense line.', '#aaccee', '14px'],
-      ['', '#ffffff', '1px'],
-      ['GRAVITY FLIP creates a shockwave', '#00ffcc', '13px'],
-      ['that reverses enemy bullets!',     '#00ffcc', '13px'],
-      ['', '#ffffff', '1px'],
-      ['Click or press ESC to close', '#446677', '11px'],
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88).setDepth(200);
+    objs.push(overlay);
+
+    // Panel background
+    const panelW = Math.min(W - 40, 440);
+    const panelH = 310;
+    const panelGfx = this.add.graphics().setDepth(201);
+    panelGfx.fillStyle(0x00000e, 0.96);
+    panelGfx.fillRect(W / 2 - panelW / 2, H / 2 - panelH / 2, panelW, panelH);
+    panelGfx.lineStyle(1, 0x003366, 0.9);
+    panelGfx.strokeRect(W / 2 - panelW / 2, H / 2 - panelH / 2, panelW, panelH);
+    objs.push(panelGfx);
+
+    const lines: [string, string, string][] = [
+      ['HOW  TO  PLAY', '#00eeff', '20px'],
+      ['', '#ffffff', '6px'],
+      [isMobile ? '🕹  LEFT SIDE   Move' : 'W / ↑    Move Up',    '#aaccee', '13px'],
+      [isMobile ? '         RIGHT SIDE  G-Flip' : 'S / ↓    Move Down', '#aaccee', '13px'],
+      [isMobile ? '' : 'SPACE    Gravity Flip',  '#00ffcc', '13px'],
+      ['(G-Flip cooldown: 5s)',          '#4499bb', '11px'],
+      ['', '#ffffff', '8px'],
+      ['OBJECTIVE', '#00eeff', '16px'],
+      ['Destroy enemy waves before', '#aaccee', '13px'],
+      ['they breach your defense line.', '#aaccee', '13px'],
+      ['', '#ffffff', '6px'],
+      ['GRAVITY FLIP creates a shockwave', '#00ffcc', '12px'],
+      ['that reverses enemy bullets!',     '#00ffcc', '12px'],
     ];
-    let yy = H / 2 - 120;
-    const objs: Phaser.GameObjects.GameObject[] = [overlay];
+
+    let yy = H / 2 - panelH / 2 + 22;
     lines.forEach(([txt, color, size]) => {
       const t = this.add.text(W / 2, yy, txt, {
         fontSize: size, color, fontFamily: 'monospace', align: 'center',
-      }).setOrigin(0.5);
+        wordWrap: { width: panelW - 30 },
+      }).setOrigin(0.5).setDepth(202);
       objs.push(t);
-      yy += parseInt(size) + 6;
+      yy += parseInt(size) + 4;
     });
 
+    // Explicit CLOSE button (especially important for mobile)
+    const closeBtnBg = this.add.rectangle(W / 2, H / 2 + panelH / 2 - 26, 180, 38, 0x003366, 0.8)
+      .setStrokeStyle(1, 0x00ccff, 0.8)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(203);
+    const closeBtnTxt = this.add.text(W / 2, H / 2 + panelH / 2 - 26, '✕  CLOSE', {
+      fontSize: '14px', color: '#00eeff', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(204);
+    objs.push(closeBtnBg, closeBtnTxt);
+
     const close = () => objs.forEach(o => o.destroy());
+
+    closeBtnBg.on('pointerover', () => { closeBtnBg.setFillStyle(0x005599, 0.9); closeBtnTxt.setColor('#ffffff'); });
+    closeBtnBg.on('pointerout',  () => { closeBtnBg.setFillStyle(0x003366, 0.8); closeBtnTxt.setColor('#00eeff'); });
+    closeBtnBg.on('pointerdown', close);
+
     overlay.on('pointerdown', close);
     this.input.keyboard?.once('keydown-ESC', close);
   }

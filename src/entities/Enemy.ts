@@ -5,7 +5,7 @@ import { SoundManager } from '../core/SoundManager';
 
 let _lastEnemyShootSnd = 0; // global cooldown to prevent audio spam
 
-export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss' | 'interceptor' | 'sniper';
+export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss' | 'interceptor' | 'sniper' | 'carrier' | 'turret';
 export const EnemyType = {
   SCOUT:       'scout'       as const,
   FIGHTER:     'fighter'     as const,
@@ -13,6 +13,8 @@ export const EnemyType = {
   BOSS:        'boss'        as const,
   INTERCEPTOR: 'interceptor' as const,
   SNIPER:      'sniper'      as const,
+  CARRIER:     'carrier'     as const,
+  TURRET:      'turret'      as const,
 };
 
 export type SpawnEdge = 'right' | 'left' | 'top' | 'bottom' | 'random';
@@ -40,6 +42,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private sinOffset: number = 0;
   private hpBar?: Phaser.GameObjects.Graphics;
   private phase: number = 1;
+  private turretAngle: number = 0;
+  private lastDroneSpawn: number = -99999;
+  private readonly DRONE_INTERVAL = 3800;
+  public  isElite: boolean = false;
+  private eliteGlow?: Phaser.GameObjects.Graphics;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: EnemyType) {
     const def = Enemy.getDef(type);
@@ -57,6 +64,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     } else if (type === EnemyType.FIGHTER) {
       this.sinAmp  = Phaser.Math.Between(30, 60);
       this.sinFreq = Phaser.Math.FloatBetween(0.5, 1.2);
+    }
+    if (type === EnemyType.TURRET) {
+      this.turretAngle = Math.random() * Math.PI * 2;
     }
 
     scene.add.existing(this);
@@ -78,8 +88,38 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       boss:        { texture: 'enemy-boss',        ...cfg.boss,        w: cfg.boss.size.width,        h: cfg.boss.size.height        },
       interceptor: { texture: 'enemy-interceptor', ...cfg.interceptor, w: cfg.interceptor.size.width, h: cfg.interceptor.size.height },
       sniper:      { texture: 'enemy-sniper',      ...cfg.sniper,      w: cfg.sniper.size.width,      h: cfg.sniper.size.height      },
+      carrier:     { texture: 'enemy-carrier',     ...cfg.carrier,     w: cfg.carrier.size.width,     h: cfg.carrier.size.height     },
+      turret:      { texture: 'enemy-turret',      ...cfg.turret,      w: cfg.turret.size.width,      h: cfg.turret.size.height      },
     };
     return map[type];
+  }
+
+  /** Apply global difficulty multipliers (EASY/NORMAL/HARD). */
+  applyGlobalDifficulty(cfg: { enemyHpMult: number; enemySpeedMult: number; enemyFireRateMult: number }): void {
+    this.hp        = Math.max(1, Math.round(this.hp    * cfg.enemyHpMult));
+    this.maxHp     = this.hp;
+    this.speed     = Math.round(this.speed             * cfg.enemySpeedMult);
+    this.fireRate  = Math.round(this.fireRate           * cfg.enemyFireRateMult);
+  }
+
+  /** Upgrades this enemy to elite status (higher stats, gold visual). */
+  makeElite(): void {
+    this.isElite = true;
+    this.hp    = Math.round(this.hp    * 2.0);
+    this.maxHp = this.hp;
+    this.speed = Math.round(this.speed * 1.25);
+    this.score = Math.round(this.score * 2.5);
+    this.setScale(this.scaleX * 1.18, this.scaleY * 1.18);
+    this.setTint(0xffaa44);
+    this.eliteGlow = this.scene.add.graphics();
+  }
+
+  /** Returns true when the carrier should spawn a drone (called once per frame). */
+  shouldSpawnDrone(time: number): boolean {
+    if (this.type !== EnemyType.CARRIER) return false;
+    if (time - this.lastDroneSpawn < this.DRONE_INTERVAL) return false;
+    this.lastDroneSpawn = time;
+    return true;
   }
 
   /** Scale HP, speed, fireRate based on wave number for infinite difficulty curve. */
@@ -100,6 +140,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   update(time: number, bullets: Phaser.Physics.Arcade.Group, playerX: number, playerY: number): void {
     if (!this.active) return;
 
+    // Elite glow ring
+    if (this.isElite && this.eliteGlow) {
+      const r = this.displayWidth * 0.62;
+      this.eliteGlow.clear();
+      const pulse = 0.45 + Math.sin(Date.now() * 0.007) * 0.3;
+      this.eliteGlow.lineStyle(2.5, 0xffaa44, pulse);
+      this.eliteGlow.strokeCircle(this.x, this.y, r);
+    }
+
     const body = this.body as Phaser.Physics.Arcade.Body;
     const dx = playerX - this.x;
     const dy = playerY - this.y;
@@ -111,6 +160,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.updateBoss(body, nx, ny, playerY);
     } else if (this.type === EnemyType.BOMBER) {
       body.setVelocity(nx * this.speed, ny * this.speed);
+    } else if (this.type === EnemyType.TURRET) {
+      this.updateTurret(body, nx, ny);
+    } else if (this.type === EnemyType.CARRIER) {
+      this.updateCarrier(body, playerX, playerY);
     } else if (this.type === EnemyType.INTERCEPTOR) {
       // Lightning-fast straight-line dash
       body.setVelocity(nx * this.speed, ny * this.speed);
@@ -137,7 +190,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     // ── Sprite faces toward player ──
     // Enemy sprite drawn facing LEFT. Formula: setRotation(atan2(this.y-pY, this.x-pX))
-    this.setRotation(Math.atan2(this.y - playerY, this.x - playerX));
+    if (this.type !== EnemyType.TURRET) {
+      this.setRotation(Math.atan2(this.y - playerY, this.x - playerX));
+    }
 
     // ── HP bar ──
     if (this.hpBar) this.drawHpBar();
@@ -151,17 +206,51 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     nx: number, _ny: number,
     playerY: number
   ): void {
+    if (this.hp <= this.maxHp * 0.25 && this.phase === 2) {
+      this.phase = 3;
+      this.speed = Math.floor(this.speed * 1.2);
+      this.fireRate = Math.floor(this.fireRate * 0.6);
+      this.setTint(0xff0000);
+      // 3페이즈 돌입 시 플래시 이벤트 emit
+      this.scene.events.emit('boss-phase3', this.x, this.y);
+    }
     if (this.hp <= this.maxHp / 2 && this.phase === 1) {
       this.phase = 2;
       this.speed = Math.floor(this.speed * 1.35);
       this.fireRate = Math.floor(this.fireRate * 0.55);
       this.setTint(0xff3333);
     }
-    const vspeed = this.phase === 2 ? 170 : 120;
+    const vspeed = this.phase === 2 ? 170 : this.phase === 3 ? 200 : 120;
     // Boss does slow X homing + faster Y homing
     body.setVelocity(
       Phaser.Math.Clamp(nx * this.speed, -vspeed, vspeed),
       Phaser.Math.Clamp((playerY - this.y) * 3, -vspeed, vspeed)
+    );
+  }
+
+  private updateTurret(
+    body: Phaser.Physics.Arcade.Body,
+    nx: number,
+    ny: number,
+  ): void {
+    // 매우 느리게 플레이어 방향으로 이동하며 포탑 자체는 회전
+    body.setVelocity(nx * this.speed * 0.4, ny * this.speed * 0.4);
+    this.turretAngle += 0.022;
+    this.setRotation(this.turretAngle);
+  }
+
+  private updateCarrier(
+    body: Phaser.Physics.Arcade.Body,
+    _playerX: number,
+    playerY: number,
+  ): void {
+    const { width: W } = this.scene.scale;
+    const targetX = W * 0.78;
+    const dx = targetX - this.x;
+    const dy = playerY - this.y;
+    body.setVelocity(
+      Phaser.Math.Clamp(dx * 1.2, -this.speed, this.speed),
+      Phaser.Math.Clamp(dy * 1.8, -this.speed * 0.7, this.speed * 0.7),
     );
   }
 
@@ -211,7 +300,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     } else if (this.type === EnemyType.BOSS) {
       // Aimed shot
       shoot(nx * 420, ny * 420);
-      if (this.phase === 2) {
+      if (this.phase === 3) {
+        // Phase 3: 전방향 + 나선형 발사
+        const spiralOff = (Date.now() * 0.003) % (Math.PI * 2);
+        for (let i = 0; i < 12; i++) {
+          const a = spiralOff + (Math.PI * 2 / 12) * i;
+          shoot(Math.cos(a) * 300, Math.sin(a) * 300);
+        }
+      } else if (this.phase === 2) {
         // Phase 2: full radial burst
         for (let i = 0; i < 8; i++) {
           const a = (Math.PI * 2 / 8) * i;
@@ -223,6 +319,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         for (const spread of [-0.55, -0.28, 0.28, 0.55]) {
           shoot(Math.cos(base + spread) * 370, Math.sin(base + spread) * 370);
         }
+      }
+    } else if (this.type === EnemyType.CARRIER) {
+      // 3방향 발사 (아래, 앞쪽 대각, 위)
+      const baseAngle = Math.atan2(ny, nx);
+      for (const spread of [-0.5, 0, 0.5]) {
+        const a = baseAngle + spread;
+        shoot(Math.cos(a) * 320, Math.sin(a) * 320);
+      }
+    } else if (this.type === EnemyType.TURRET) {
+      // 8방향 회전 연속 발사
+      const numBullets = 8;
+      for (let i = 0; i < numBullets; i++) {
+        const a = this.turretAngle + (Math.PI * 2 / numBullets) * i;
+        shoot(Math.cos(a) * 260, Math.sin(a) * 260);
       }
     }
   }
@@ -250,14 +360,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setTint(0xffffff);
     this.scene.time.delayedCall(70, () => {
       if (!this.active) return;
-      this.clearTint();
-      if (this.type === EnemyType.BOSS && this.phase === 2) this.setTint(0xff3333);
+      if      (this.type === EnemyType.BOSS && this.phase === 3) this.setTint(0xff0000);
+      else if (this.type === EnemyType.BOSS && this.phase === 2) this.setTint(0xff3333);
+      else if (this.isElite)                                      this.setTint(0xffaa44);
+      else                                                        this.clearTint();
     });
     return this.hp <= 0;
   }
 
   kill(): void {
     this.hpBar?.destroy();
+    this.eliteGlow?.destroy();
     this.disableBody(true, true);
   }
 

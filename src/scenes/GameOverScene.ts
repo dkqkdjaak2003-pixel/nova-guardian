@@ -2,7 +2,15 @@ import Phaser from 'phaser';
 import { ScoreManager } from '../core/ScoreManager';
 import { SoundManager } from '../core/SoundManager';
 
-interface GOData { score: number; wave: number }
+interface GOStats {
+  totalKills: number;
+  maxCombo: number;
+  perfectWaves: number;
+  bonusScore: number;
+  difficulty: string;
+  diffColor: number;
+}
+interface GOData { score: number; wave: number; stats?: GOStats }
 
 const RANK_COLORS: Record<string, string> = {
   S: '#ffdd00', A: '#00ffaa', B: '#00aaff', C: '#aaaaff', D: '#ff8866',
@@ -15,6 +23,7 @@ export class GameOverScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     const score = data?.score ?? 0;
     const wave  = data?.wave  ?? 1;
+    const stats = data?.stats;
 
     // ── Background ──
     this.add.image(W / 2, H / 2, 'bg').setDisplaySize(W, H);
@@ -35,6 +44,16 @@ export class GameOverScene extends Phaser.Scene {
     const rank = ScoreManager.add(score, wave);
     const isNewRecord = rank === 1;
     const topScores = ScoreManager.getAll();
+
+    // ── Difficulty label ──
+    if (stats) {
+      const diffHex = '#' + (stats.diffColor ?? 0x00ccff).toString(16).padStart(6, '0');
+      this.add.text(W / 2, H / 2 - 232, stats.difficulty, {
+        fontSize: '11px', color: diffHex, fontFamily: 'monospace',
+        fontStyle: 'bold', letterSpacing: 3,
+        stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5);
+    }
 
     // ── Title ──
     const shadow = this.add.text(W / 2 + 3, H / 2 - 200 + 3, 'MISSION FAILED', {
@@ -130,12 +149,33 @@ export class GameOverScene extends Phaser.Scene {
       }
     }
 
+    // ── Stats panel ──
+    if (stats) {
+      const spx = W / 2 - 190, spy = H / 2 + 80, spw = 380, sph = 50;
+      const spGfx = this.add.graphics();
+      spGfx.fillStyle(0x000a22, 0.8);
+      spGfx.fillRect(spx, spy, spw, sph);
+      spGfx.lineStyle(1, 0x002244, 0.7);
+      spGfx.strokeRect(spx, spy, spw, sph);
+
+      const sS2 = { fontSize: '9px', color: '#334466', fontFamily: 'monospace' };
+      const vS2 = { fontSize: '14px', color: '#00eeff', fontFamily: 'monospace', fontStyle: 'bold' };
+      this.add.text(spx + 12,  spy + 5,  'KILLS',         sS2);
+      this.add.text(spx + 12,  spy + 17, stats.totalKills.toString(),  vS2);
+      this.add.text(spx + 90,  spy + 5,  'MAX COMBO',     sS2);
+      this.add.text(spx + 90,  spy + 17, `×${stats.maxCombo}`, vS2);
+      this.add.text(spx + 195, spy + 5,  'PERFECT WAVES', sS2);
+      this.add.text(spx + 195, spy + 17, stats.perfectWaves.toString(), vS2);
+      this.add.text(spx + 290, spy + 5,  'BONUS',         sS2);
+      this.add.text(spx + 290, spy + 17, `+${stats.bonusScore}`, { fontSize: '12px', color: '#ffdd00', fontFamily: 'monospace', fontStyle: 'bold' });
+    }
+
     // ── Buttons ──
-    this.buildButton(W / 2 - 115, H / 2 + 102, 'PLAY AGAIN', 0x00ccff, () => {
+    this.buildButton(W / 2 - 115, H / 2 + 142, 'PLAY AGAIN', 0x00ccff, () => {
       this.cameras.main.fadeOut(400, 0, 0, 8);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('GameScene'));
     });
-    this.buildButton(W / 2 + 115, H / 2 + 102, 'MAIN MENU', 0x0088aa, () => {
+    this.buildButton(W / 2 + 115, H / 2 + 142, 'MAIN MENU', 0x0088aa, () => {
       this.cameras.main.fadeOut(400, 0, 0, 8);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));
     });
@@ -145,11 +185,11 @@ export class GameOverScene extends Phaser.Scene {
 
   private buildButton(x: number, y: number, label: string, color: number, cb: () => void): void {
     const hex = '#' + color.toString(16).padStart(6, '0');
-    const bg  = this.add.rectangle(x, y, 210, 38, color, 0.15).setStrokeStyle(1, color, 0.6);
-    const txt = this.add.text(x, y, label, {
+    const bg  = this.add.rectangle(0, 0, 210, 44, color, 0.15).setStrokeStyle(1, color, 0.6);
+    const txt = this.add.text(0, 0, label, {
       fontSize: '14px', color: hex, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    const btn = this.add.container(0, 0, [bg, txt]).setSize(210, 38).setInteractive({ useHandCursor: true });
+    const btn = this.add.container(x, y, [bg, txt]).setSize(210, 44).setInteractive({ useHandCursor: true });
     btn.on('pointerover',  () => { bg.setFillStyle(color, 0.3); txt.setColor('#ffffff'); });
     btn.on('pointerout',   () => { bg.setFillStyle(color, 0.15); txt.setColor(hex); });
     btn.on('pointerdown',  cb);

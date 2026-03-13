@@ -30,7 +30,12 @@ export class AssetGenerator {
     this.genSpecialBtn(scene);
     this.genInterceptor(scene);
     this.genSniper(scene);
+    this.genEnemyTurret(scene);
     this.genPowerups(scene);
+    this.genEnemyCarrier(scene);
+    this.genLifePowerup(scene);
+    this.genCoin(scene);
+    this.genDPadArrow(scene);
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -1089,6 +1094,74 @@ export class AssetGenerator {
     gfx.destroy();
   }
 
+  // ── TURRET ────────────────────────────────────────────────────────────────
+  private static genEnemyTurret(scene: Phaser.Scene): void {
+    const gfx = this.g(scene);
+    const S = 72, c = 36;
+
+    // 외부 경고 글로우
+    gfx.fillStyle(0xcc4400, 0.1);
+    gfx.fillCircle(c, c, 35);
+
+    // 기저 플랫폼 (8각형)
+    const basePts: { x: number; y: number }[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i - Math.PI / 8;
+      basePts.push({ x: c + Math.cos(a) * 32, y: c + Math.sin(a) * 32 });
+    }
+    gfx.fillStyle(0x2a0800, 1);
+    gfx.fillPoints(basePts, true);
+    gfx.fillStyle(0x3d1000, 1);
+    const innerPts: { x: number; y: number }[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i - Math.PI / 8;
+      innerPts.push({ x: c + Math.cos(a) * 27, y: c + Math.sin(a) * 27 });
+    }
+    gfx.fillPoints(innerPts, true);
+
+    // 포탑 링 (외곽)
+    gfx.lineStyle(3, 0xff4400, 0.8);
+    gfx.strokeCircle(c, c, 24);
+    gfx.lineStyle(1, 0xff7700, 0.5);
+    gfx.strokeCircle(c, c, 28);
+
+    // 포탑 몸체
+    gfx.fillStyle(0x1a0500, 1);
+    gfx.fillCircle(c, c, 20);
+    gfx.fillStyle(0x330a00, 1);
+    gfx.fillCircle(c, c, 16);
+    gfx.fillStyle(0x551500, 1);
+    gfx.fillCircle(c, c, 12);
+
+    // 8개 포구 (외부 방향)
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i;
+      const bx = c + Math.cos(a) * 22;
+      const by = c + Math.sin(a) * 22;
+      gfx.fillStyle(0x110300, 1);
+      gfx.fillCircle(bx, by, 4);
+      gfx.fillStyle(0xff4400, 0.9);
+      gfx.fillCircle(bx, by, 2);
+      gfx.fillStyle(0xff8800, 0.7);
+      gfx.fillCircle(bx, by, 1);
+    }
+
+    // 중앙 코어
+    gfx.fillStyle(0xff2200, 0.8);
+    gfx.fillCircle(c, c, 6);
+    gfx.fillStyle(0xff6600, 0.9);
+    gfx.fillCircle(c, c, 3);
+    gfx.fillStyle(0xffcc00, 1);
+    gfx.fillCircle(c, c, 1);
+
+    // 플랫폼 장식선
+    gfx.lineStyle(1, 0x441100, 0.5);
+    gfx.strokeCircle(c, c, 32);
+
+    gfx.generateTexture('enemy-turret', S, S);
+    gfx.destroy();
+  }
+
   // ── POWERUPS ──────────────────────────────────────────────────────────────
   private static genPowerups(scene: Phaser.Scene): void {
     const defs: Array<{ key: string; color: number; sym: number }> = [
@@ -1116,6 +1189,126 @@ export class AssetGenerator {
     });
   }
 
+  private static genEnemyCarrier(scene: Phaser.Scene): void {
+    const gfx = this.g(scene);
+    const W = 130, H = 90;
+    const cy = 45;
+
+    // 엔진 글로우
+    gfx.fillStyle(0x004488, 0.14);
+    gfx.fillEllipse(W - 2, cy, 34, 60);
+
+    // 항공모함 선체 (육중한 직사각형 기반)
+    gfx.fillStyle(0x0a1428, 1);
+    gfx.fillRect(14, cy - 22, 100, 44);
+    gfx.fillStyle(0x142240, 1);
+    gfx.fillRect(16, cy - 20, 96, 40);
+    gfx.fillStyle(0x1a2e55, 1);
+    gfx.fillRect(20, cy - 16, 88, 32);
+
+    // 갑판 상부 구조물
+    gfx.fillStyle(0x0e1a33, 1);
+    gfx.fillRect(38, cy - 32, 60, 14);
+    gfx.fillStyle(0x162444, 1);
+    gfx.fillRect(40, cy - 30, 56, 12);
+
+    // 함교 타워
+    gfx.fillStyle(0x08101e, 1);
+    gfx.fillRect(70, cy - 38, 22, 20);
+    gfx.fillStyle(0x122040, 1);
+    gfx.fillRect(72, cy - 36, 18, 16);
+    // 함교 창문
+    gfx.fillStyle(0x0088ff, 0.7);
+    gfx.fillRect(74, cy - 33, 5, 3);
+    gfx.fillRect(81, cy - 33, 5, 3);
+
+    // 드론 발진 포트 (갑판)
+    const ports = [30, 50, 70, 90];
+    ports.forEach(px2 => {
+      gfx.fillStyle(0x001122, 1);
+      gfx.fillRect(px2, cy - 18, 12, 8);
+      gfx.fillStyle(0x0044aa, 0.8);
+      gfx.fillRect(px2 + 1, cy - 17, 10, 6);
+      gfx.fillStyle(0x00aaff, 0.5);
+      gfx.fillRect(px2 + 3, cy - 16, 6, 4);
+    });
+
+    // 선수 (왼쪽, 좁은 쐐기)
+    gfx.fillStyle(0x0e1a33, 1);
+    gfx.fillPoints([
+      { x: 14, y: cy - 22 }, { x: 14, y: cy + 22 }, { x: 2, y: cy }
+    ], true);
+    gfx.fillStyle(0x1a2e55, 0.9);
+    gfx.fillPoints([
+      { x: 14, y: cy - 14 }, { x: 14, y: cy + 14 }, { x: 5, y: cy }
+    ], true);
+
+    // 방어 포탑 (상단)
+    gfx.fillStyle(0x0a1428, 1);
+    gfx.fillRect(28, cy - 26, 10, 7);
+    gfx.fillRect(56, cy - 26, 10, 7);
+    gfx.fillStyle(0x00aaff, 0.6);
+    gfx.fillRect(28, cy - 24, 3, 5);
+    gfx.fillRect(56, cy - 24, 3, 5);
+
+    // 방어 포탑 (하단)
+    gfx.fillStyle(0x0a1428, 1);
+    gfx.fillRect(28, cy + 19, 10, 7);
+    gfx.fillRect(56, cy + 19, 10, 7);
+    gfx.fillStyle(0x00aaff, 0.6);
+    gfx.fillRect(28, cy + 21, 3, 5);
+    gfx.fillRect(56, cy + 21, 3, 5);
+
+    // 엔진 배열 (오른쪽)
+    for (let i = 0; i < 4; i++) {
+      const ey = cy - 15 + i * 10;
+      gfx.fillStyle(0x040c18, 1);
+      gfx.fillRect(W - 14, ey - 3, 14, 6);
+      gfx.fillStyle(0x0055aa, 0.9);
+      gfx.fillRect(W - 10, ey - 2, 10, 4);
+      gfx.fillStyle(0x44aaff, 0.6);
+      gfx.fillRect(W - 7, ey - 1, 7, 2);
+    }
+
+    // 중앙 에너지 척추
+    gfx.fillStyle(0x0066cc, 0.4);
+    gfx.fillRect(22, cy - 2, 80, 4);
+    gfx.fillStyle(0x0088ff, 0.25);
+    gfx.fillRect(22, cy - 4, 80, 8);
+
+    // 패널 솔기
+    gfx.lineStyle(1, 0x003366, 0.5);
+    gfx.lineBetween(20, cy - 10, 110, cy - 10);
+    gfx.lineBetween(20, cy + 10, 110, cy + 10);
+    gfx.lineBetween(50, cy - 20, 50, cy + 20);
+    gfx.lineBetween(80, cy - 20, 80, cy + 20);
+
+    gfx.generateTexture('enemy-carrier', W, H);
+    gfx.destroy();
+  }
+
+  private static genLifePowerup(scene: Phaser.Scene): void {
+    const gfx = this.g(scene);
+    const S = 28, c = 14;
+    const color = 0xff2244;
+    // Outer glow
+    gfx.fillStyle(color, 0.2); gfx.fillCircle(c, c, 14);
+    gfx.fillStyle(color, 0.35); gfx.fillCircle(c, c, 11);
+    // Body
+    gfx.fillStyle(color, 0.9); gfx.fillCircle(c, c, 8);
+    // Heart shape (small)
+    gfx.fillStyle(0xff88aa, 0.9);
+    gfx.fillCircle(c - 2, c - 1, 3);
+    gfx.fillCircle(c + 2, c - 1, 3);
+    gfx.fillPoints([
+      { x: c - 5, y: c + 1 }, { x: c, y: c + 6 }, { x: c + 5, y: c + 1 }
+    ], true);
+    gfx.fillStyle(0xffffff, 0.4); gfx.fillCircle(c - 3, c - 2, 1);
+    gfx.lineStyle(1, color, 1); gfx.strokeCircle(c, c, 10);
+    gfx.generateTexture('powerup-life', S, S);
+    gfx.destroy();
+  }
+
   // ── SEEDED PRNG (so stars look the same each run) ─────────────────────────
 
   private static seededRng(seed: number): () => number {
@@ -1124,5 +1317,45 @@ export class AssetGenerator {
       s = (s * 1664525 + 1013904223) & 0xffffffff;
       return (s >>> 0) / 0xffffffff;
     };
+  }
+
+  private static genCoin(scene: Phaser.Scene): void {
+    const SIZE = 24;
+    const cx = SIZE / 2, cy = SIZE / 2, r = 10;
+    const gfx = this.g(scene);
+    // Outer glow
+    gfx.fillStyle(0xcc8800, 0.35);
+    gfx.fillCircle(cx, cy, r + 3);
+    // Main gold circle
+    gfx.fillStyle(0xffcc00, 1);
+    gfx.fillCircle(cx, cy, r);
+    // Inner ring
+    gfx.fillStyle(0xffaa00, 1);
+    gfx.fillCircle(cx, cy, r - 2);
+    // Center emblem (small star)
+    gfx.fillStyle(0xffee88, 1);
+    gfx.fillCircle(cx, cy, 3);
+    // Shine highlight
+    gfx.fillStyle(0xffffff, 0.55);
+    gfx.generateTexture('coin', SIZE, SIZE);
+    gfx.destroy();
+  }
+
+  private static genDPadArrow(scene: Phaser.Scene): void {
+    const SIZE = 64, c = 32;
+    const gfx = this.g(scene);
+    // Outer glow
+    gfx.fillStyle(0x00aaff, 0.15);
+    gfx.fillCircle(c, c, 30);
+    // Button base
+    gfx.fillStyle(0x001122, 0.7);
+    gfx.fillCircle(c, c, 26);
+    gfx.lineStyle(2, 0x0088cc, 0.6);
+    gfx.strokeCircle(c, c, 26);
+    // Arrow
+    gfx.fillStyle(0x00eeff, 0.9);
+    gfx.fillTriangle(c, c - 15, c - 12, c + 8, c + 12, c + 8);
+    gfx.generateTexture('dpad-arrow', SIZE, SIZE);
+    gfx.destroy();
   }
 }

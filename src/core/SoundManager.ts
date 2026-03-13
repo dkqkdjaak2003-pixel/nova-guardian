@@ -12,6 +12,10 @@ export class SoundManager {
   private static bgmTimerId = 0;
   private static bgmOscs:   AudioNode[] = [];
 
+  // Volume state (0–1, independent of mute)
+  private static _bgmVol: number = 0.5;  // maps to bgmGain * 0.6
+  private static _sfxVol: number = 1.0;  // maps to sfxGain * 1.0
+
   static get ready():  boolean { return !!this._ctx; }
   static get muted():  boolean { return this._muted; }
   static get context(): AudioContext | null { return this._ctx; }
@@ -20,6 +24,11 @@ export class SoundManager {
 
   static init(): void {
     if (this._ctx) return;
+    // Load persisted volumes
+    const savedBgm = localStorage.getItem('nova_bgm_vol');
+    const savedSfx = localStorage.getItem('nova_sfx_vol');
+    if (savedBgm !== null) this._bgmVol = parseFloat(savedBgm);
+    if (savedSfx !== null) this._sfxVol = parseFloat(savedSfx);
     try {
       this._ctx     = new AudioContext();
 
@@ -28,13 +37,30 @@ export class SoundManager {
       this.masterGain.connect(this._ctx.destination);
 
       this.sfxGain = this._ctx.createGain();
-      this.sfxGain.gain.value = 1.0;
+      this.sfxGain.gain.value = this._sfxVol;
       this.sfxGain.connect(this.masterGain);
 
       this.bgmGain = this._ctx.createGain();
-      this.bgmGain.gain.value = 0.3;
+      this.bgmGain.gain.value = this._bgmVol * 0.6;
       this.bgmGain.connect(this.masterGain);
     } catch { /* unsupported */ }
+  }
+
+  static getBgmVolume(): number { return this._bgmVol; }
+  static getSfxVolume(): number { return this._sfxVol; }
+
+  static setBgmVolume(v: number): void {
+    this._bgmVol = Math.max(0, Math.min(1, v));
+    if (this.bgmGain && this._ctx)
+      this.bgmGain.gain.setTargetAtTime(this._bgmVol * 0.6, this._ctx.currentTime, 0.04);
+    localStorage.setItem('nova_bgm_vol', this._bgmVol.toString());
+  }
+
+  static setSfxVolume(v: number): void {
+    this._sfxVol = Math.max(0, Math.min(1, v));
+    if (this.sfxGain && this._ctx)
+      this.sfxGain.gain.setTargetAtTime(this._sfxVol, this._ctx.currentTime, 0.04);
+    localStorage.setItem('nova_sfx_vol', this._sfxVol.toString());
   }
 
   static resume(): void {
